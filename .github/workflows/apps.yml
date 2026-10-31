@@ -1,0 +1,86 @@
+# Builds the three apps from the same React client:
+#   Windows  → Jeep City installer (.exe, Tauri NSIS)        artifact "windows-installer"
+#   Android  → debug APK (installable on any phone)           artifact "android-apk"
+#   iOS      → simulator build (proves it compiles)           a device build needs an Apple Developer account
+# Runs on pushes to main, on version tags (v*) and by hand. A tag also attaches the files to a GitHub Release.
+# Server addresses baked in as defaults: repository variable SERVER_URLS, e.g.
+#   http://192.168.1.10/api,https://jc.example.com/api       (each device can change them on the login screen)
+name: Apps
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  VITE_SERVER_URLS: ${{ vars.SERVER_URLS }}
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with: { workspaces: apps/desktop/src-tauri }
+      - run: npm ci --no-audit --no-fund
+      - name: Build the installer
+        run: npm run build -w @jc/desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: apps/desktop/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci --no-audit --no-fund
+      - name: Build web app and copy it into Android
+        run: |
+          npm run build:app -w @jc/client
+          cd apps/mobile && npx cap sync android
+      - name: Build APK
+        working-directory: apps/mobile/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: apps/mobile/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - name: Build web app and copy it into iOS
+        run: |
+          npm run build:app -w @jc/client
+          cd apps/mobile && npx cap sync ios
+      - name: Build for the simulator (no signing)
+        working-directory: apps/mobile/ios/App
+        run: xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, android, ios]
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out }
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/windows-installer/*.exe
+            out/android-apk/*.apk

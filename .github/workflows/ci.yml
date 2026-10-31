@@ -1,0 +1,22 @@
+# Tests and type checks on every push and pull request.
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - name: Type check (client and server)
+        run: |
+          npx tsc --noEmit -p apps/client/tsconfig.json
+          npx tsc --noEmit -p apps/server
+      - name: Tests (core + server)
+        run: npm test
+      - name: Web build
+        run: npm run build -w @jc/client

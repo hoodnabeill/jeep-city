@@ -1,0 +1,31 @@
+node_modules
+dist
+.env
+.impeccable/review
+.data
+
+# Old Byte system data (customer data): never commit
+Byte_Prog/
+byte_prog/
+*.mde
+*.mdb
+*.ldb
+*.laccdb
+*.[mM][dD][fF]
+*.[lL][dD][fF]
+*.[bB][aA][kK]
+
+# Shop server secrets and local state (D-88)
+deploy/rclone/
+deploy/restore-drill.log
+.env.local
+*.env.local
+
+# App builds and signing keys: never commit
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+*.pem

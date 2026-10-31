@@ -1,0 +1,85 @@
+# Jeep City shop server (D-88): Ubuntu Server + Docker Compose. Every service restarts by itself after a crash or a
+# power cut (Docker starts on boot). Secrets come from deploy/.env (not in git; see .env.example).
+name: jeepcity
+
+services:
+  db:
+    image: postgres:17.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jeepcity
+      POSTGRES_USER: jeepcity
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jeepcity -d jeepcity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: { context: .., dockerfile: deploy/api.Dockerfile }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      NODE_ENV: production
+      PORT: "8787"
+      DATABASE_URL: postgres://jeepcity:${POSTGRES_PASSWORD}@db:5432/jeepcity
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in deploy/.env}
+      FILES_DIR: /data/files
+      BACKUP_DIR: /backups
+    volumes:
+      - files:/data/files
+      - backups:/backups:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # The web app for browsers on the LAN, and /api for every client. The LAN address and the tunnel both point here.
+  web:
+    build: { context: .., dockerfile: deploy/web.Dockerfile }
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Daily at BACKUP_HOUR (Cairo): database dump + files, kept 14 days here, copied to cloud storage with rclone.
+  backup:
+    build: { context: ./backup }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      PGHOST: db
+      PGDATABASE: jeepcity
+      PGUSER: jeepcity
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Africa/Cairo
+      BACKUP_HOUR: ${BACKUP_HOUR:-02}
+      KEEP_DAYS: "14"
+      RCLONE_REMOTE: ${RCLONE_REMOTE:-}
+    volumes:
+      - backups:/backups
+      - files:/data/files:ro
+      - ./rclone:/config/rclone
+
+  # Outside access with no open router ports. The public hostname is set in the Cloudflare dashboard → http://web:80.
+  cloudflared:
+    image: cloudflare/cloudflared:2025.9.1
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in deploy/.env}
+    depends_on: [web]
+
+volumes:
+  db:
+  files:
+  backups:

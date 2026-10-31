@@ -1,0 +1,15 @@
+{
+  "name": "jeep-city-system",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @jc/client",
+    "build": "npm run build -w @jc/client",
+    "server": "npm run dev -w @jc/server",
+    "server:byte": "npm run dev:byte -w @jc/server",
+    "test": "npm test -w @jc/core && npm test -w @jc/server"
+  }
+}

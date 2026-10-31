@@ -1,0 +1,14 @@
+{
+  "appId": "com.jeepcity.shop",
+  "appName": "Jeep City",
+  "webDir": "../client/dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}

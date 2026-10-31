@@ -1,0 +1,15 @@
+{
+  "name": "@jc/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Windows app (Tauri 2) around the same React client. Built on GitHub Actions (needs Rust; see apps/desktop/README.md).",
+  "scripts": {
+    "tauri": "tauri",
+    "icons": "tauri icon app-icon.png",
+    "build": "tauri build",
+    "dev": "tauri dev"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  }
+}

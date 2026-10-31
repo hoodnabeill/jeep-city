@@ -1,0 +1,87 @@
+/* Jeep City design tokens — Paper theme of the brand system, light only. */
+@import "@fontsource-variable/cairo/wght.css";
+@import "@fontsource/barlow/latin-500.css";
+@import "@fontsource/barlow/latin-600.css";
+@import "@fontsource/barlow/latin-700.css";
+
+:root {
+  color-scheme: light;
+
+  /* Brand */
+  --jc-yellow: #F5C518;
+  --jc-yellow-hover: #E9B900;
+  --jc-yellow-press: #D6A900;
+  --jc-yellow-tint: #FDF4CF;
+  --jc-black: #0B0B0B;
+  --jc-white: #FFFFFF;
+
+  /* Paper surfaces */
+  --surface: #FFFFFF;
+  --surface-raised: #F5F3EC;
+  --surface-hover: #FAF9F5;
+  --surface-sunken: #EFECE3;
+  --line: #D9D6CC;
+  --line-strong: #B9B5A9;
+  --text: #0B0B0B;
+  --text-muted: #5C5A55;
+  --text-subtle: #6F6C64;
+  --accent-ink: #7A5C00;
+  --on-yellow: #0B0B0B;
+
+  /* Navigation rail (brand black ground) */
+  --rail-bg: #0B0B0B;
+  --rail-raised: #171716;
+  --rail-line: #2E2D2A;
+  --rail-text: #FFFFFF;
+  --rail-muted: #A6A6A6;
+
+  /* Functional state colours (not brand colours, D-05) */
+  --ok: #1D6F42;      --ok-bg: #E4F1E9;
+  --warn: #8A5300;    --warn-bg: #FBEFD2;
+  --bad: #B42318;     --bad-bg: #FCE8E6;
+  --work: #5E4700;    --work-bg: #FDF1C4;
+
+  /* Part grades */
+  --grade-original-bg: #0B0B0B;  --grade-original: #F5C518;
+  --grade-copy-bg: #E9ECF1;      --grade-copy: #27323F;
+  --grade-used-bg: #F1E5D6;      --grade-used: #643F1E;
+
+  /* Egyptian private-car plate */
+  --plate-band: #8DC2EC;
+  --plate-ink: #0B0B0B;
+
+  /* Type */
+  --font-ar: "Cairo Variable", "Cairo", "Segoe UI", Tahoma, sans-serif;
+  --font-lat: "Barlow", "Segoe UI", Arial, sans-serif;
+  --fs-xs: 0.78rem;   /* 12.5px */
+  --fs-sm: 0.875rem;  /* 14px */
+  --fs-md: 1rem;      /* 16px */
+  --fs-lg: 1.125rem;  /* 18px */
+  --fs-xl: 1.375rem;  /* 22px */
+  --fs-2xl: 1.75rem;  /* 28px */
+  --fs-3xl: 2.25rem;  /* 36px */
+
+  /* Space (4-based) */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  /* Shape: square, one 45° cut */
+  --cut: 10px;
+  --cut-sm: 6px;
+
+  /* Size */
+  --control-h: 44px;
+  --control-h-sm: 34px;
+  --control-h-lg: 52px;
+  --rail-w: 232px;
+  --topbar-h: 64px;
+
+  /* Depth: only for floating layers */
+  --shadow-pop: 0 10px 28px -8px rgb(11 11 11 / 0.22), 0 2px 6px rgb(11 11 11 / 0.08);
+  --shadow-dialog: 0 24px 60px -12px rgb(11 11 11 / 0.35);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast: 120ms;
+  --t-med: 200ms;
+}

@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The app only shows the web client; it needs no native permissions.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

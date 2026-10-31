@@ -1,0 +1,1 @@
+ALTER TYPE "public"."statement_kind" ADD VALUE 'byte';

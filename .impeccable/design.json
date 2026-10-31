@@ -1,0 +1,831 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T18:54:26.576Z",
+  "title": "Design System: Jeep City System",
+  "extensions": {
+    "colorMeta": {
+      "jc-yellow": {
+        "role": "primary",
+        "displayName": "Jeep City Yellow",
+        "canonical": "#F5C518",
+        "tonalRamp": [
+          "oklch(15% 0.094 90.4)",
+          "oklch(26% 0.143 90.4)",
+          "oklch(37% 0.168 90.4)",
+          "oklch(48% 0.168 90.4)",
+          "oklch(60% 0.168 90.4)",
+          "oklch(72% 0.149 90.4)",
+          "oklch(84% 0.1 90.4)",
+          "oklch(95% 0.035 90.4)"
+        ]
+      },
+      "jc-yellow-hover": {
+        "role": "primary",
+        "displayName": "Hover Yellow",
+        "canonical": "#E9B900",
+        "tonalRamp": [
+          "oklch(15% 0.092 89.8)",
+          "oklch(26% 0.139 89.8)",
+          "oklch(37% 0.165 89.8)",
+          "oklch(48% 0.165 89.8)",
+          "oklch(60% 0.165 89.8)",
+          "oklch(72% 0.146 89.8)",
+          "oklch(84% 0.097 89.8)",
+          "oklch(95% 0.034 89.8)"
+        ]
+      },
+      "jc-yellow-press": {
+        "role": "primary",
+        "displayName": "Press Yellow",
+        "canonical": "#D6A900",
+        "tonalRamp": [
+          "oklch(15% 0.086 89.4)",
+          "oklch(26% 0.131 89.4)",
+          "oklch(37% 0.154 89.4)",
+          "oklch(48% 0.154 89.4)",
+          "oklch(60% 0.154 89.4)",
+          "oklch(72% 0.137 89.4)",
+          "oklch(84% 0.091 89.4)",
+          "oklch(95% 0.032 89.4)"
+        ]
+      },
+      "jc-yellow-tint": {
+        "role": "primary",
+        "displayName": "Yellow Tint",
+        "canonical": "#FDF4CF",
+        "tonalRamp": [
+          "oklch(15% 0.027 95.9)",
+          "oklch(26% 0.041 95.9)",
+          "oklch(37% 0.049 95.9)",
+          "oklch(48% 0.049 95.9)",
+          "oklch(60% 0.049 95.9)",
+          "oklch(72% 0.043 95.9)",
+          "oklch(84% 0.029 95.9)",
+          "oklch(95% 0.01 95.9)"
+        ]
+      },
+      "jc-black": {
+        "role": "primary",
+        "displayName": "Brand Black",
+        "canonical": "#0B0B0B",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(26% 0 89.9)",
+          "oklch(37% 0 89.9)",
+          "oklch(48% 0 89.9)",
+          "oklch(60% 0 89.9)",
+          "oklch(72% 0 89.9)",
+          "oklch(84% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(26% 0 89.9)",
+          "oklch(37% 0 89.9)",
+          "oklch(48% 0 89.9)",
+          "oklch(60% 0 89.9)",
+          "oklch(72% 0 89.9)",
+          "oklch(84% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Raised Paper",
+        "canonical": "#F5F3EC",
+        "tonalRamp": [
+          "oklch(15% 0.005 93.6)",
+          "oklch(26% 0.008 93.6)",
+          "oklch(37% 0.01 93.6)",
+          "oklch(48% 0.01 93.6)",
+          "oklch(60% 0.01 93.6)",
+          "oklch(72% 0.008 93.6)",
+          "oklch(84% 0.006 93.6)",
+          "oklch(95% 0.002 93.6)"
+        ]
+      },
+      "surface-hover": {
+        "role": "neutral",
+        "displayName": "Hover Paper",
+        "canonical": "#FAF9F5",
+        "tonalRamp": [
+          "oklch(15% 0.003 95.1)",
+          "oklch(26% 0.005 95.1)",
+          "oklch(37% 0.005 95.1)",
+          "oklch(48% 0.005 95.1)",
+          "oklch(60% 0.005 95.1)",
+          "oklch(72% 0.005 95.1)",
+          "oklch(84% 0.003 95.1)",
+          "oklch(95% 0.001 95.1)"
+        ]
+      },
+      "surface-sunken": {
+        "role": "neutral",
+        "displayName": "Sunken Paper",
+        "canonical": "#EFECE3",
+        "tonalRamp": [
+          "oklch(15% 0.007 91.5)",
+          "oklch(26% 0.011 91.5)",
+          "oklch(37% 0.012 91.5)",
+          "oklch(48% 0.012 91.5)",
+          "oklch(60% 0.012 91.5)",
+          "oklch(72% 0.011 91.5)",
+          "oklch(84% 0.007 91.5)",
+          "oklch(95% 0.003 91.5)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#D9D6CC",
+        "tonalRamp": [
+          "oklch(15% 0.008 93)",
+          "oklch(26% 0.012 93)",
+          "oklch(37% 0.014 93)",
+          "oklch(48% 0.014 93)",
+          "oklch(60% 0.014 93)",
+          "oklch(72% 0.012 93)",
+          "oklch(84% 0.008 93)",
+          "oklch(95% 0.003 93)"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong Line",
+        "canonical": "#B9B5A9",
+        "tonalRamp": [
+          "oklch(15% 0.01 91.6)",
+          "oklch(26% 0.015 91.6)",
+          "oklch(37% 0.017 91.6)",
+          "oklch(48% 0.017 91.6)",
+          "oklch(60% 0.017 91.6)",
+          "oklch(72% 0.015 91.6)",
+          "oklch(84% 0.01 91.6)",
+          "oklch(95% 0.004 91.6)"
+        ]
+      },
+      "line-input": {
+        "role": "neutral",
+        "displayName": "Input Line",
+        "canonical": "#949085",
+        "tonalRamp": [
+          "oklch(15% 0.009 90.3)",
+          "oklch(26% 0.014 90.3)",
+          "oklch(37% 0.017 90.3)",
+          "oklch(48% 0.017 90.3)",
+          "oklch(60% 0.017 90.3)",
+          "oklch(72% 0.015 90.3)",
+          "oklch(84% 0.01 90.3)",
+          "oklch(95% 0.003 90.3)"
+        ]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#5C5A55",
+        "tonalRamp": [
+          "oklch(15% 0.005 88.7)",
+          "oklch(26% 0.007 88.7)",
+          "oklch(37% 0.008 88.7)",
+          "oklch(48% 0.008 88.7)",
+          "oklch(60% 0.008 88.7)",
+          "oklch(72% 0.007 88.7)",
+          "oklch(84% 0.005 88.7)",
+          "oklch(95% 0.002 88.7)"
+        ]
+      },
+      "text-subtle": {
+        "role": "neutral",
+        "displayName": "Subtle Ink",
+        "canonical": "#6F6C64",
+        "tonalRamp": [
+          "oklch(15% 0.007 89.8)",
+          "oklch(26% 0.011 89.8)",
+          "oklch(37% 0.013 89.8)",
+          "oklch(48% 0.013 89.8)",
+          "oklch(60% 0.013 89.8)",
+          "oklch(72% 0.011 89.8)",
+          "oklch(84% 0.008 89.8)",
+          "oklch(95% 0.003 89.8)"
+        ]
+      },
+      "accent-ink": {
+        "role": "neutral",
+        "displayName": "Gold Ink",
+        "canonical": "#7A5C00",
+        "tonalRamp": [
+          "oklch(15% 0.056 86.4)",
+          "oklch(26% 0.085 86.4)",
+          "oklch(37% 0.101 86.4)",
+          "oklch(48% 0.101 86.4)",
+          "oklch(60% 0.101 86.4)",
+          "oklch(72% 0.089 86.4)",
+          "oklch(84% 0.06 86.4)",
+          "oklch(95% 0.021 86.4)"
+        ]
+      },
+      "rail-raised": {
+        "role": "neutral",
+        "displayName": "Rail Raised",
+        "canonical": "#171716",
+        "tonalRamp": [
+          "oklch(15% 0.001 106.6)",
+          "oklch(26% 0.002 106.6)",
+          "oklch(37% 0.002 106.6)",
+          "oklch(48% 0.002 106.6)",
+          "oklch(60% 0.002 106.6)",
+          "oklch(72% 0.002 106.6)",
+          "oklch(84% 0.001 106.6)",
+          "oklch(95% 0 106.6)"
+        ]
+      },
+      "rail-line": {
+        "role": "neutral",
+        "displayName": "Rail Line",
+        "canonical": "#2E2D2A",
+        "tonalRamp": [
+          "oklch(15% 0.003 91.6)",
+          "oklch(26% 0.005 91.6)",
+          "oklch(37% 0.006 91.6)",
+          "oklch(48% 0.006 91.6)",
+          "oklch(60% 0.006 91.6)",
+          "oklch(72% 0.005 91.6)",
+          "oklch(84% 0.003 91.6)",
+          "oklch(95% 0.001 91.6)"
+        ]
+      },
+      "rail-muted": {
+        "role": "neutral",
+        "displayName": "Rail Muted",
+        "canonical": "#A6A6A6",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(26% 0 89.9)",
+          "oklch(37% 0 89.9)",
+          "oklch(48% 0 89.9)",
+          "oklch(60% 0 89.9)",
+          "oklch(72% 0 89.9)",
+          "oklch(84% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ]
+      },
+      "ok": {
+        "role": "state",
+        "displayName": "Done Green",
+        "canonical": "#1D6F42",
+        "tonalRamp": [
+          "oklch(15% 0.059 154.6)",
+          "oklch(26% 0.09 154.6)",
+          "oklch(37% 0.106 154.6)",
+          "oklch(48% 0.106 154.6)",
+          "oklch(60% 0.106 154.6)",
+          "oklch(72% 0.094 154.6)",
+          "oklch(84% 0.063 154.6)",
+          "oklch(95% 0.022 154.6)"
+        ]
+      },
+      "ok-bg": {
+        "role": "state",
+        "displayName": "Done Green Tint",
+        "canonical": "#E4F1E9",
+        "tonalRamp": [
+          "oklch(15% 0.01 159.1)",
+          "oklch(26% 0.015 159.1)",
+          "oklch(37% 0.017 159.1)",
+          "oklch(48% 0.017 159.1)",
+          "oklch(60% 0.017 159.1)",
+          "oklch(72% 0.015 159.1)",
+          "oklch(84% 0.01 159.1)",
+          "oklch(95% 0.004 159.1)"
+        ]
+      },
+      "warn": {
+        "role": "state",
+        "displayName": "Watch Amber",
+        "canonical": "#8A5300",
+        "tonalRamp": [
+          "oklch(15% 0.061 66.9)",
+          "oklch(26% 0.092 66.9)",
+          "oklch(37% 0.109 66.9)",
+          "oklch(48% 0.109 66.9)",
+          "oklch(60% 0.109 66.9)",
+          "oklch(72% 0.097 66.9)",
+          "oklch(84% 0.065 66.9)",
+          "oklch(95% 0.023 66.9)"
+        ]
+      },
+      "warn-bg": {
+        "role": "state",
+        "displayName": "Watch Amber Tint",
+        "canonical": "#FBEFD2",
+        "tonalRamp": [
+          "oklch(15% 0.023 88.2)",
+          "oklch(26% 0.034 88.2)",
+          "oklch(37% 0.04 88.2)",
+          "oklch(48% 0.04 88.2)",
+          "oklch(60% 0.04 88.2)",
+          "oklch(72% 0.036 88.2)",
+          "oklch(84% 0.024 88.2)",
+          "oklch(95% 0.008 88.2)"
+        ]
+      },
+      "bad": {
+        "role": "state",
+        "displayName": "Fault Red",
+        "canonical": "#B42318",
+        "tonalRamp": [
+          "oklch(15% 0.102 29.5)",
+          "oklch(26% 0.154 29.5)",
+          "oklch(37% 0.182 29.5)",
+          "oklch(48% 0.182 29.5)",
+          "oklch(60% 0.182 29.5)",
+          "oklch(72% 0.161 29.5)",
+          "oklch(84% 0.108 29.5)",
+          "oklch(95% 0.038 29.5)"
+        ]
+      },
+      "bad-bg": {
+        "role": "state",
+        "displayName": "Fault Red Tint",
+        "canonical": "#FCE8E6",
+        "tonalRamp": [
+          "oklch(15% 0.012 24.4)",
+          "oklch(26% 0.019 24.4)",
+          "oklch(37% 0.022 24.4)",
+          "oklch(48% 0.022 24.4)",
+          "oklch(60% 0.022 24.4)",
+          "oklch(72% 0.02 24.4)",
+          "oklch(84% 0.013 24.4)",
+          "oklch(95% 0.005 24.4)"
+        ]
+      },
+      "work": {
+        "role": "state",
+        "displayName": "In-Work Ochre",
+        "canonical": "#5E4700",
+        "tonalRamp": [
+          "oklch(15% 0.047 87.4)",
+          "oklch(26% 0.071 87.4)",
+          "oklch(37% 0.084 87.4)",
+          "oklch(48% 0.084 87.4)",
+          "oklch(60% 0.084 87.4)",
+          "oklch(72% 0.075 87.4)",
+          "oklch(84% 0.05 87.4)",
+          "oklch(95% 0.018 87.4)"
+        ]
+      },
+      "work-bg": {
+        "role": "state",
+        "displayName": "In-Work Ochre Tint",
+        "canonical": "#FDF1C4",
+        "tonalRamp": [
+          "oklch(15% 0.033 94.9)",
+          "oklch(26% 0.05 94.9)",
+          "oklch(37% 0.06 94.9)",
+          "oklch(48% 0.06 94.9)",
+          "oklch(60% 0.06 94.9)",
+          "oklch(72% 0.053 94.9)",
+          "oklch(84% 0.035 94.9)",
+          "oklch(95% 0.012 94.9)"
+        ]
+      },
+      "grade-copy-bg": {
+        "role": "grade",
+        "displayName": "Copy Slate Tint",
+        "canonical": "#E9ECF1",
+        "tonalRamp": [
+          "oklch(15% 0.004 260.7)",
+          "oklch(26% 0.006 260.7)",
+          "oklch(37% 0.007 260.7)",
+          "oklch(48% 0.007 260.7)",
+          "oklch(60% 0.007 260.7)",
+          "oklch(72% 0.007 260.7)",
+          "oklch(84% 0.004 260.7)",
+          "oklch(95% 0.002 260.7)"
+        ]
+      },
+      "grade-copy": {
+        "role": "grade",
+        "displayName": "Copy Slate",
+        "canonical": "#27323F",
+        "tonalRamp": [
+          "oklch(15% 0.016 252.9)",
+          "oklch(26% 0.024 252.9)",
+          "oklch(37% 0.028 252.9)",
+          "oklch(48% 0.028 252.9)",
+          "oklch(60% 0.028 252.9)",
+          "oklch(72% 0.025 252.9)",
+          "oklch(84% 0.016 252.9)",
+          "oklch(95% 0.006 252.9)"
+        ]
+      },
+      "grade-used-bg": {
+        "role": "grade",
+        "displayName": "Used Brown Tint",
+        "canonical": "#F1E5D6",
+        "tonalRamp": [
+          "oklch(15% 0.013 73.6)",
+          "oklch(26% 0.02 73.6)",
+          "oklch(37% 0.024 73.6)",
+          "oklch(48% 0.024 73.6)",
+          "oklch(60% 0.024 73.6)",
+          "oklch(72% 0.021 73.6)",
+          "oklch(84% 0.014 73.6)",
+          "oklch(95% 0.005 73.6)"
+        ]
+      },
+      "grade-used": {
+        "role": "grade",
+        "displayName": "Used Brown",
+        "canonical": "#643F1E",
+        "tonalRamp": [
+          "oklch(15% 0.039 60.4)",
+          "oklch(26% 0.059 60.4)",
+          "oklch(37% 0.07 60.4)",
+          "oklch(48% 0.07 60.4)",
+          "oklch(60% 0.07 60.4)",
+          "oklch(72% 0.062 60.4)",
+          "oklch(84% 0.041 60.4)",
+          "oklch(95% 0.015 60.4)"
+        ]
+      },
+      "plate-band": {
+        "role": "signature",
+        "displayName": "Plate Band Blue",
+        "canonical": "#8DC2EC",
+        "tonalRamp": [
+          "oklch(15% 0.046 242.9)",
+          "oklch(26% 0.069 242.9)",
+          "oklch(37% 0.082 242.9)",
+          "oklch(48% 0.082 242.9)",
+          "oklch(60% 0.082 242.9)",
+          "oklch(72% 0.072 242.9)",
+          "oklch(84% 0.048 242.9)",
+          "oklch(95% 0.017 242.9)"
+        ]
+      },
+      "chart-labor": {
+        "role": "data",
+        "displayName": "Labor Blue",
+        "canonical": "#2a78d6",
+        "tonalRamp": [
+          "oklch(15% 0.091 255.5)",
+          "oklch(26% 0.138 255.5)",
+          "oklch(37% 0.163 255.5)",
+          "oklch(48% 0.163 255.5)",
+          "oklch(60% 0.163 255.5)",
+          "oklch(72% 0.144 255.5)",
+          "oklch(84% 0.096 255.5)",
+          "oklch(95% 0.034 255.5)"
+        ]
+      },
+      "chart-parts": {
+        "role": "data",
+        "displayName": "Parts Aqua",
+        "canonical": "#1baf7a",
+        "tonalRamp": [
+          "oklch(15% 0.079 162.1)",
+          "oklch(26% 0.119 162.1)",
+          "oklch(37% 0.141 162.1)",
+          "oklch(48% 0.141 162.1)",
+          "oklch(60% 0.141 162.1)",
+          "oklch(72% 0.125 162.1)",
+          "oklch(84% 0.083 162.1)",
+          "oklch(95% 0.029 162.1)"
+        ]
+      },
+      "chart-oils": {
+        "role": "data",
+        "displayName": "Oils Amber",
+        "canonical": "#eda100",
+        "tonalRamp": [
+          "oklch(15% 0.09 75.1)",
+          "oklch(26% 0.136 75.1)",
+          "oklch(37% 0.161 75.1)",
+          "oklch(48% 0.161 75.1)",
+          "oklch(60% 0.161 75.1)",
+          "oklch(72% 0.143 75.1)",
+          "oklch(84% 0.095 75.1)",
+          "oklch(95% 0.034 75.1)"
+        ]
+      },
+      "pin-scratch": {
+        "role": "data",
+        "displayName": "Scratch Pin",
+        "canonical": "#B45309",
+        "tonalRamp": [
+          "oklch(15% 0.082 49)",
+          "oklch(26% 0.123 49)",
+          "oklch(37% 0.146 49)",
+          "oklch(48% 0.146 49)",
+          "oklch(60% 0.146 49)",
+          "oklch(72% 0.129 49)",
+          "oklch(84% 0.086 49)",
+          "oklch(95% 0.03 49)"
+        ]
+      },
+      "pin-dent": {
+        "role": "data",
+        "displayName": "Dent Pin",
+        "canonical": "#1D4ED8",
+        "tonalRamp": [
+          "oklch(15% 0.122 264.4)",
+          "oklch(26% 0.184 264.4)",
+          "oklch(37% 0.217 264.4)",
+          "oklch(48% 0.217 264.4)",
+          "oklch(60% 0.217 264.4)",
+          "oklch(72% 0.193 264.4)",
+          "oklch(84% 0.128 264.4)",
+          "oklch(95% 0.045 264.4)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "figure-due": {
+        "displayName": "Amount Due",
+        "purpose": "The statement amount-due figure only, Jeep City Yellow on Brand Black."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Today-strip values; odometer readings at 1.35rem."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "One page title per screen; 1.35rem under 760px."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel and section titles; dialog titles at 1.375rem."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text and inputs; tables at 0.95rem."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, table headers, tabs, segmented options."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Badges and grade chips; hints and errors at 600 with line-height 1.5."
+      },
+      "numeric": {
+        "displayName": "Numeric",
+        "purpose": "Table number cells, money, codes, VIN, dates as isolated LTR runs."
+      }
+    },
+    "shadows": [
+      {
+        "name": "pop",
+        "value": "0 10px 28px -8px rgb(11 11 11 / 0.22), 0 2px 6px rgb(11 11 11 / 0.08)",
+        "purpose": "Popovers, overflow menus, the line-item picker, toasts."
+      },
+      {
+        "name": "dialog",
+        "value": "0 24px 60px -12px rgb(11 11 11 / 0.35)",
+        "purpose": "Dialogs and the command palette, over a 45-50% black backdrop."
+      },
+      {
+        "name": "sheet",
+        "value": "0 12px 40px -18px rgb(11 11 11 / 0.45)",
+        "purpose": "On-screen print preview sheets and receipts on the #E4E1D7 stage; removed in print."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Dialog, popover, toast and switch entrances."
+      },
+      {
+        "name": "t-fast",
+        "value": "120ms",
+        "purpose": "Hover colour and border changes."
+      },
+      {
+        "name": "t-med",
+        "value": "200ms",
+        "purpose": "Dialog, palette, popover and toast entrances (short translate + fade)."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "1ms",
+        "purpose": "All animation and transition durations under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow-side",
+        "value": "1280px"
+      },
+      {
+        "name": "icon-rail",
+        "value": "1100px"
+      },
+      {
+        "name": "bottom-bar",
+        "value": "760px"
+      }
+    ],
+    "shape": {
+      "cutClipPath": "polygon(0 0, 100% 0, 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)))",
+      "cuts": {
+        "primary-button": "10px",
+        "nav-item-active": "10px",
+        "grade-chip": "6px",
+        "avatar": "7px",
+        "empty-icon": "12px"
+      }
+    },
+    "sizes": {
+      "control": "44px",
+      "control-sm": "34px",
+      "control-lg": "52px",
+      "rail": "232px",
+      "rail-collapsed": "76px",
+      "topbar": "64px",
+      "page-max": "1560px"
+    },
+    "print": [
+      {
+        "name": "a4-statement",
+        "value": "@page { size: A4; margin: 10mm; }"
+      },
+      {
+        "name": "a4-condition",
+        "value": "@page { size: A4; margin: 10mm; }"
+      },
+      {
+        "name": "a4-job-card",
+        "value": "@page { size: A4; margin: 9mm; }"
+      },
+      {
+        "name": "receipt-80",
+        "value": "@page { size: 80mm auto; margin: 3mm; }"
+      },
+      {
+        "name": "header-rule",
+        "value": "border-bottom: 1.2mm solid #F5C518"
+      }
+    ],
+    "formats": {
+      "date": "2026/10/28",
+      "time": "10:30 ص / 2:15 م (12-hour)",
+      "dateTimeJoin": " · "
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one yellow action per screen; square with one 10px 45-degree cut corner.",
+      "html": "<div dir=\"rtl\"><button class=\"ds-btn ds-btn-primary\">استقبال سيارة</button></div>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border: 1px solid transparent; border-radius: 0; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); font-weight: 700; font-size: 0.94rem; line-height: 1; cursor: pointer; transition: background-color 120ms cubic-bezier(0.16,1,0.3,1), border-color 120ms; } .ds-btn-primary { background: var(--jc-yellow, #F5C518); color: #0B0B0B; clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); } .ds-btn-primary:hover { background: var(--jc-yellow-hover, #E9B900); } .ds-btn-primary:active { background: var(--jc-yellow-press, #D6A900); } .ds-btn-primary:focus-visible { outline: none; box-shadow: inset 0 0 0 2px #0B0B0B, inset 0 0 0 4px #F5C518; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Default button: white with the input-line stroke; every non-primary action.",
+      "html": "<div dir=\"rtl\"><button class=\"ds-btn2\">معاينة</button></div>",
+      "css": ".ds-btn2 { display: inline-flex; align-items: center; height: 44px; padding: 0 18px; border: 1px solid #949085; border-radius: 0; background: #FFFFFF; color: #0B0B0B; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); font-weight: 700; font-size: 0.94rem; line-height: 1; cursor: pointer; transition: background-color 120ms, border-color 120ms; } .ds-btn2:hover { background: #FAF9F5; border-color: #0B0B0B; } .ds-btn2:active { background: #F5F3EC; } .ds-btn2:focus-visible { outline: none; box-shadow: inset 0 0 0 2px #0B0B0B, inset 0 0 0 4px #FFFFFF; }"
+    },
+    {
+      "name": "Dark Button",
+      "kind": "button",
+      "refersTo": "button-dark",
+      "description": "Black fill, white text; strong secondary action without spending the yellow.",
+      "html": "<div dir=\"rtl\"><button class=\"ds-btn-dark\">إضافة بند</button></div>",
+      "css": ".ds-btn-dark { display: inline-flex; align-items: center; height: 44px; padding: 0 18px; border: 0; border-radius: 0; background: #0B0B0B; color: #FFFFFF; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); font-weight: 700; font-size: 0.94rem; line-height: 1; cursor: pointer; transition: background-color 120ms; } .ds-btn-dark:hover { background: #262624; } .ds-btn-dark:focus-visible { outline: none; box-shadow: inset 0 0 0 2px #F5C518; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Square 44px field; black stroke and a yellow halo on focus.",
+      "html": "<div dir=\"rtl\" class=\"ds-field\"><label class=\"ds-field-label\" for=\"ds-odo\">قراءة العداد</label><input id=\"ds-odo\" class=\"ds-input ds-num\" value=\"112,640\"></div>",
+      "css": ".ds-field { display: grid; gap: 6px; max-width: 280px; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); } .ds-field-label { font-size: 0.875rem; font-weight: 600; color: #0B0B0B; } .ds-input { height: 44px; padding: 0 12px; background: #FFFFFF; border: 1px solid #949085; border-radius: 0; font-size: 1rem; color: #0B0B0B; transition: border-color 120ms, box-shadow 120ms; } .ds-input:hover { border-color: #5C5A55; } .ds-input:focus { outline: none; border-color: #0B0B0B; box-shadow: 0 0 0 3px rgb(245 197 24 / 0.55); } .ds-num { font-family: var(--font-lat, 'Barlow', 'Segoe UI', Arial, sans-serif); font-variant-numeric: tabular-nums lining-nums; direction: ltr; text-align: right; }"
+    },
+    {
+      "name": "Navigation Rail",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Black rail; the active item is a solid yellow block with one 10px cut corner.",
+      "html": "<nav dir=\"rtl\" class=\"ds-rail\"><a class=\"ds-rail-item\" aria-current=\"page\" href=\"#\">الرئيسية</a><a class=\"ds-rail-item\" href=\"#\">الاستقبال <span class=\"ds-rail-count\">4</span></a><a class=\"ds-rail-item\" href=\"#\">بيانات العملاء</a></nav>",
+      "css": ".ds-rail { display: grid; gap: 2px; width: 232px; padding: 8px 12px; background: #0B0B0B; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); } .ds-rail-item { display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 14px; color: #A6A6A6; text-decoration: none; font-weight: 600; font-size: 0.94rem; transition: background-color 120ms, color 120ms; } .ds-rail-item:hover { background: #171716; color: #FFFFFF; } .ds-rail-item:focus-visible { outline: 2px solid #F5C518; outline-offset: -2px; } .ds-rail-item[aria-current=\"page\"] { background: #F5C518; color: #0B0B0B; font-weight: 700; clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px)); } .ds-rail-count { margin-inline-start: auto; min-width: 24px; height: 22px; padding: 0 6px; display: grid; place-items: center; background: #171716; color: #FFFFFF; font: 600 12px/1 var(--font-lat, 'Barlow', Arial, sans-serif); }"
+    },
+    {
+      "name": "Grade Chips",
+      "kind": "chip",
+      "refersTo": "grade-original",
+      "description": "Part grade chips with a 6px cut corner: أصلي yellow on black, كوبي slate, مستعمل brown.",
+      "html": "<div dir=\"rtl\" class=\"ds-row\"><span class=\"ds-grade ds-grade-original\">أصلي</span><span class=\"ds-grade ds-grade-copy\">كوبي</span><span class=\"ds-grade ds-grade-used\">مستعمل</span></div>",
+      "css": ".ds-row { display: flex; gap: 8px; } .ds-grade { display: inline-flex; align-items: center; height: 24px; padding-inline: 9px 10px; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); font-size: 0.78rem; font-weight: 700; line-height: 1; white-space: nowrap; clip-path: polygon(0 0, 100% 0, 100% 100%, 6px 100%, 0 calc(100% - 6px)); } .ds-grade-original { background: #0B0B0B; color: #F5C518; } .ds-grade-copy { background: #E9ECF1; color: #27323F; } .ds-grade-used { background: #F1E5D6; color: #643F1E; }"
+    },
+    {
+      "name": "State Badges",
+      "kind": "chip",
+      "refersTo": "badge-ok",
+      "description": "Functional state on its own tint with a square dot; never brand decoration.",
+      "html": "<div dir=\"rtl\" class=\"ds-row\"><span class=\"ds-badge ds-ok\"><i></i>تم التسليم</span><span class=\"ds-badge ds-work\"><i></i>جاري العمل</span><span class=\"ds-badge ds-warn\"><i></i>بانتظار قطع</span><span class=\"ds-badge ds-bad\"><i></i>نفد</span></div>",
+      "css": ".ds-row { display: flex; gap: 8px; flex-wrap: wrap; } .ds-badge { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); font-size: 0.78rem; font-weight: 700; line-height: 1; } .ds-badge i { width: 7px; height: 7px; background: currentColor; } .ds-ok { background: #E4F1E9; color: #1D6F42; } .ds-work { background: #FDF1C4; color: #5E4700; } .ds-warn { background: #FBEFD2; color: #8A5300; } .ds-bad { background: #FCE8E6; color: #B42318; }"
+    },
+    {
+      "name": "Egyptian Plate Chip",
+      "kind": "custom",
+      "refersTo": "plate",
+      "description": "Signature: every car shown as a private-car plate, blue مصر · EGYPT band over letters | digits.",
+      "html": "<span dir=\"rtl\" class=\"ds-plate\"><span class=\"ds-plate-band\"><span>مصر</span><span class=\"ds-lat\">EGYPT</span></span><span class=\"ds-plate-body\"><span class=\"ds-plate-letters\">ل ف و</span><span class=\"ds-plate-digits\">281</span></span></span>",
+      "css": ".ds-plate { display: inline-grid; grid-template-rows: 30% 1fr; width: 112px; height: 40px; border: 1.5px solid #0B0B0B; border-radius: 3px; background: #FFFFFF; color: #0B0B0B; overflow: hidden; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); } .ds-plate-band { display: flex; align-items: center; justify-content: space-between; padding: 0 5px; background: #8DC2EC; border-bottom: 1.5px solid #0B0B0B; font-size: 8px; font-weight: 700; line-height: 1; } .ds-lat { font-family: var(--font-lat, 'Barlow', Arial, sans-serif); font-size: 7px; letter-spacing: 0.08em; direction: ltr; } .ds-plate-body { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; text-align: center; white-space: nowrap; } .ds-plate-letters { font-weight: 800; font-size: 15px; line-height: 1.2; border-inline-end: 1.5px solid #0B0B0B; } .ds-plate-digits { font-family: var(--font-lat, 'Barlow', Arial, sans-serif); font-weight: 700; font-size: 15px; letter-spacing: 0.06em; line-height: 1.2; direction: ltr; unicode-bidi: isolate; }"
+    },
+    {
+      "name": "Totals Block",
+      "kind": "card",
+      "refersTo": "totals-due",
+      "description": "Signature: the paper form's totals order, ending in the black amount-due band with a yellow figure.",
+      "html": "<div dir=\"rtl\" class=\"ds-totals\"><div class=\"ds-totals-title\">الإجماليات</div><div class=\"ds-totals-rows\"><div class=\"ds-tr\"><span>إجمالي المصنعيات</span><b>2,500</b></div><div class=\"ds-tr\"><span>إجمالي قطع الغيار</span><b>11,350</b></div><div class=\"ds-tr ds-sub\"><span>إجمالي خصم</span><b>850</b></div><div class=\"ds-tr ds-rule\"><span>صافي المصنعيات</span><b>2,050</b></div><div class=\"ds-tr\"><span>صافي قطع الغيار</span><b>10,950</b></div><div class=\"ds-tr\"><span>صافي الزيوت</span><b>0</b></div><div class=\"ds-tr\"><span>إجمالي خامات</span><b>0</b></div><div class=\"ds-tr ds-rule ds-strong\"><span>إجمالي بيان</span><b>13,850</b></div></div><div class=\"ds-due\"><span class=\"ds-due-label\">أجمالي المطلوب</span><span class=\"ds-due-value\">13,000 <small>ج.م</small></span><span class=\"ds-words\">فقط ثلاثة عشر ألف جنيه مصري</span></div></div>",
+      "css": ".ds-totals { width: 340px; background: #FFFFFF; border: 1px solid #D9D6CC; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); color: #0B0B0B; } .ds-totals-title { padding: 14px 20px; border-bottom: 1px solid #D9D6CC; font-weight: 800; } .ds-totals-rows { padding: 6px 0; } .ds-tr { display: flex; justify-content: space-between; padding: 7px 20px; font-size: 0.95rem; } .ds-tr b { font-family: var(--font-lat, 'Barlow', Arial, sans-serif); font-weight: 600; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; } .ds-sub { color: #5C5A55; } .ds-strong { font-weight: 700; } .ds-rule { border-top: 1px solid #D9D6CC; margin-top: 6px; padding-top: 12px; } .ds-due { display: grid; gap: 4px; padding: 16px 20px 18px; background: #0B0B0B; color: #FFFFFF; } .ds-due-label { font-size: 0.875rem; font-weight: 600; color: #A6A6A6; } .ds-due-value { font: 700 2.25rem/1.15 var(--font-lat, 'Barlow', Arial, sans-serif); font-variant-numeric: tabular-nums; direction: ltr; text-align: right; color: #F5C518; } .ds-due-value small { font-family: var(--font-ar, 'Cairo', sans-serif); font-size: 0.45em; color: #A6A6A6; } .ds-words { font-size: 0.875rem; color: #E8E6DF; }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat white container with a hairline border, 56px ruled head, 20px body.",
+      "html": "<section dir=\"rtl\" class=\"ds-panel\"><header class=\"ds-panel-head\"><h3 class=\"ds-panel-title\">بيانات السيارة</h3></header><div class=\"ds-panel-body\">Jeep Grand Cherokee 2019 · <span class=\"ds-n\">1C4RJFBG5KC712345</span></div></section>",
+      "css": ".ds-panel { width: 420px; background: #FFFFFF; border: 1px solid #D9D6CC; font-family: var(--font-ar, 'Cairo', 'Segoe UI', Tahoma, sans-serif); color: #0B0B0B; } .ds-panel-head { display: flex; align-items: center; min-height: 56px; padding: 10px 20px; border-bottom: 1px solid #D9D6CC; } .ds-panel-title { margin: 0; font-size: 1.125rem; font-weight: 700; } .ds-panel-body { padding: 20px; line-height: 1.6; } .ds-n { font-family: var(--font-lat, 'Barlow', Arial, sans-serif); letter-spacing: 0.04em; color: #5C5A55; direction: ltr; unicode-bidi: isolate; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Shop's Own Paperwork, Made Calm",
+    "overview": "The system is the workshop's paper forms rebuilt as a counter tool. A black brand rail carries the colour badge and the nine sections; the work happens on a white sheet with warm-grey raised panels and hairline rules, the way a printed statement is ruled. The statement and Job Card keep the old paper form's order on screen and on print, so the accountant and the engineers read them without learning anything new. Density is operational: 44px controls, 54px table rows, figures in tabular Latin numerals, everything reachable from the keyboard and the Ctrl+K palette.\n\nBrand yellow is scarce on purpose. It fills; it never writes on white. One yellow primary button per screen, the yellow active nav block, the yellow rule under a printed header. Where yellow meets black (the amount-due figure, the أصلي grade chip) it is the brand's own pairing. Every corner is square except one 45° cut, cut out with clip-path, which is the system's only shape gesture. Each car appears as a small Egyptian licence plate, the thread from search to car file to statement.\n\nThe world rejects the grey admin template with a blue accent and rows of toolbar icons (the old YAZSYS program). Light mode only, Arabic RTL, the brand Paper theme pinned by the owner's brief.",
+    "keyCharacteristics": [
+      "Black rail (#0B0B0B) beside a white work surface, warm-grey raised panels, hairline rules.",
+      "Yellow as fill only, one primary per screen.",
+      "Square everything, one 45° cut corner on the primary button, active nav item, grade chips and avatars.",
+      "Egyptian plate chip for every car.",
+      "Totals in the paper form's order, on screen and on print.",
+      "Cairo for Arabic, Barlow tabular figures for money, codes, VIN, dates."
+    ],
+    "rules": [
+      {
+        "name": "The Fill-Only Yellow Rule",
+        "body": "Yellow #F5C518 is a fill, never text on white or on raised paper. Yellow figures and labels appear only on Brand Black: the amount-due figure, the أصلي grade chip, the active-nav count, the warn toast icon.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Yellow Button Rule",
+        "body": "Each screen has at most one yellow primary button, in the page head (dialogs carry their own single primary). Every other action is secondary, ghost or dark.",
+        "section": "colors"
+      },
+      {
+        "name": "The State-Is-Not-Brand Rule",
+        "body": "Green, amber, red and ochre mean status only. They never decorate, and yellow never signals status.",
+        "section": "colors"
+      },
+      {
+        "name": "The Isolated Figure Rule",
+        "body": "Every number, code, VIN, plate digit and date is a Barlow run with `direction: ltr; unicode-bidi: isolate` and tabular lining numerals. RTL text never reorders a figure.",
+        "section": "typography"
+      },
+      {
+        "name": "The Paper Date Rule",
+        "body": "Dates read 2026/10/28 (Latin run). Times read 12-hour with ص or م, as a separate run joined by a muted \" · \". Western digits by default; Arabic-Indic digits are a user setting applied to the same formats.",
+        "section": "typography"
+      },
+      {
+        "name": "The Floating-Only Shadow Rule",
+        "body": "A shadow means the layer floats: popover, dialog, palette, toast, print preview sheet. Panels, tables and tiles stay flat and use borders.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Cut Rule",
+        "body": "Only one corner is ever cut, always at 45°, always by clip-path. Never round a corner to soften it.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do use Jeep City Yellow (#F5C518) only as a fill: one primary button per screen, the active nav block, the printed header rule.",
+      "Do put yellow figures or text only on Brand Black (#0B0B0B): the amount-due figure and the أصلي chip.",
+      "Do cut exactly one corner at 45° with clip-path (10px buttons and nav, 6px grade chips, 7px avatars); keep every other corner square.",
+      "Do show every car as the Egyptian plate chip.",
+      "Do keep the totals in the paper form's order on screen and on print.",
+      "Do set money, codes, VIN and dates in Barlow tabular figures as isolated LTR runs; dates as 2026/10/28, time 12-hour with ص / م.",
+      "Do use the chart series Labor Blue (#2a78d6), Parts Aqua (#1baf7a), Oils Amber (#eda100) for every labor/parts/oils breakdown.",
+      "Do print A4 at 10mm margins, the Job Card at 9mm, receipts at 80mm."
+    ],
+    "donts": [
+      "Don't set yellow text on white or Raised Paper; use Gold Ink (#7A5C00) when a gold-family text colour is needed.",
+      "Don't place a second yellow button on a screen.",
+      "Don't use green, amber, red or ochre for anything but state.",
+      "Don't round corners or cut more than one corner.",
+      "Don't add shadows to panels, tables or tiles at rest; shadows are for floating layers only.",
+      "Don't rebuild the grey admin template with a blue accent and rows of toolbar icons."
+    ]
+  }
+}
