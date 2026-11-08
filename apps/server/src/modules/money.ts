@@ -10,8 +10,8 @@ import {
   bonuses, cashMovements, cashSessions, customerLedger, expenseCategories, expenses, itemVariants, items, statements, stockLevels, technicians, users, workOrders,
 } from "../db/schema";
 import { AppError, notFound } from "../errors";
+import { int } from "../http";
 
-const int = z.number().int().safe();
 
 async function openSession(db: Db) {
   const [s] = await db.select().from(cashSessions).where(isNull(cashSessions.closedAt)).orderBy(desc(cashSessions.openedAt)).limit(1);
@@ -70,7 +70,6 @@ export function moneyRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
     return { id };
   });
 
-  /* Expenses */
   app.get("/expense-categories", { preHandler: cash }, async () => db.select().from(expenseCategories).where(isNull(expenseCategories.archivedAt)).orderBy(expenseCategories.name));
   app.post("/expense-categories", { preHandler: cash }, async (req, reply) => {
     const { name } = z.object({ name: z.string().trim().min(2).max(60) }).parse(req.body);
@@ -100,7 +99,6 @@ export function moneyRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
     return { id };
   });
 
-  /* Bonuses (manual, no automatic commission) */
   app.get("/bonuses", { preHandler: [auth, requirePerm("bonus.manage")] }, async (req) => {
     const q = z.object({ from: z.iso.date().optional(), to: z.iso.date().optional() }).parse(req.query);
     const where = and(q.from ? gte(bonuses.givenAt, new Date(q.from)) : undefined, q.to ? lte(bonuses.givenAt, new Date(`${q.to}T23:59:59Z`)) : undefined);

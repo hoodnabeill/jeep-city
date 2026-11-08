@@ -9,9 +9,8 @@ import type { Db } from "../db/client";
 import { itemCategories, items, itemVariants, packageLines, servicePackages, stockLevels, stockMovements, users } from "../db/schema";
 import { AppError, notFound } from "../errors";
 import { move } from "./stock";
+import { Id, int } from "../http";
 
-const Id = z.object({ id: z.uuid() });
-const int = z.number().int().safe();
 const VariantIn = z.object({
   id: z.uuid().optional(),
   grade: z.enum(["original", "copy", "used"]).nullable().default(null),

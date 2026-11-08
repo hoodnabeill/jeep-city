@@ -67,7 +67,6 @@ export async function pull(db: Db, since: number, limit = 2000) {
   return { dbId: id?.value as string | undefined, cursor, more, rows: out };
 }
 
-/* ---------- Push ---------- */
 const REPLAYABLE = [/^\/work-orders(\/|$)/, /^\/statements(\/|$)/, /^\/customers(\/|$)/, /^\/vehicles(\/|$)/, /^\/direct-sales$/];
 const Mutation = z.object({
   id: z.uuid(),
@@ -81,7 +80,6 @@ export type PushResult = { id: string; status: "ok" | "rejected" | "retry"; http
 // Not stored, so the PC tries again: the server or the session had a temporary problem.
 const RETRYABLE = (code: number) => code === 401 || code === 429 || code >= 500;
 
-/* ---------- Events ---------- */
 const streams = new Set<ServerResponse>();
 let pending: NodeJS.Timeout | null = null;
 function announce(db: Db) {

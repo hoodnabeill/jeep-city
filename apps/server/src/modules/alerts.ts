@@ -9,7 +9,8 @@ import { can, uuidv7 } from "@jc/core";
 import { z } from "zod";
 import { actorOf } from "../auth/auth";
 import type { Db } from "../db/client";
-import { reminders, settings } from "../db/schema";
+import { reminders } from "../db/schema";
+import { getSetting } from "./settings";
 import { AppError } from "../errors";
 import { audit } from "../audit";
 
@@ -67,8 +68,7 @@ export function alertRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
   app.get("/alerts", { preHandler: auth }, async (req) => {
     const due = await listReminders(db, sql`r.done_at is null`).then((rs) => rs.filter((r) => r.due));
     if (!can(actorOf(req).role, "customer.viewBalance")) return { reminders: due, debts: [] };
-    const [s] = await db.select({ v: settings.value }).from(settings).where(eq(settings.key, "alerts.debtDays"));
-    const days = Number(s?.v ?? 30);
+    const days = Number(await getSetting(db, "alerts.debtDays"));
     const debts = (await db.execute(sql`select c.id, c.name, c.mobile, c.whatsapp, b.balance, b.since
       from (select customer_id, sum(amount_pt) as balance, max(created_at) as since from customer_ledger group by customer_id having sum(amount_pt) > 0) b
       join customers c on c.id = b.customer_id where b.since < now() - (${days} || ' days')::interval order by b.balance desc limit 200`)) as unknown as { rows: { balance: string }[] };

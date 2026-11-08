@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import { egp, qty, uuidv7 } from "@jc/core";
 import { auditLog, cashMovements, statementRevisions, statements, stockMovements, workOrders } from "../src/db/schema";
-import { customerBalancePt } from "../src/modules/statements";
+import { customerBalancePt } from "../src/modules/ledger";
 import { level, onHandFromLedger } from "../src/modules/stock";
 import { fixture9309, makeItem, makeWorkOrder, setup, stockIn } from "./helpers";
 

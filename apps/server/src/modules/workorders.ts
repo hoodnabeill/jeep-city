@@ -16,11 +16,9 @@ import {
 import { AppError, notFound } from "../errors";
 import { nextNumber } from "./numbering";
 import { guardOverIssue, issueToWorkOrder, lockLevel, mainWarehouseId, move } from "./stock";
+import { Id, int, opt } from "../http";
 
-const Id = z.object({ id: z.uuid() });
 const LineParams = z.object({ id: z.uuid(), lineId: z.uuid() });
-const int = z.number().int().safe();
-const opt = (n: number) => z.string().trim().max(n).nullable().optional();
 
 const Header = z.object({
   type: z.enum(["repair", "inquiry", "condition"]).optional(),
@@ -161,7 +159,6 @@ export function workOrderRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
     return loadWorkOrder(db, actor, id);
   });
 
-  /* Lines */
   const LineIn = z.object({
     id: z.uuid().optional(),
     variantId: z.uuid().optional(),
@@ -246,7 +243,6 @@ export function workOrderRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
     return { lines: results, lowStock: results.some((r) => r.lowStock) };
   });
 
-  /* Intake marks and estimate approvals */
   app.post("/work-orders/:id/marks", { preHandler: edit }, async (req, reply) => {
     const { id } = Id.parse(req.params);
     const m = z.object({ id: z.uuid().optional(), x: z.number().int().min(0).max(1000), y: z.number().int().min(0).max(1000), kind: z.enum(["scratch", "dent", "damage"]), note: z.string().max(300).default(""), photoFileId: z.uuid().optional() }).parse(req.body);

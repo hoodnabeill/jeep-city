@@ -9,14 +9,14 @@ import { amountInWords, can, CATEGORIES, computeTotals, deniedMessage, uuidv7, t
 import { audit, type Actor } from "../audit";
 import type { Db } from "../db/client";
 import {
-  cashMovements, customerLedger, docLines, items, itemVariants, paymentMethods, payments, settings, statementRevisions, statements, workOrders,
+  cashMovements, customerLedger, docLines, items, itemVariants, paymentMethods, payments, statementRevisions, statements, workOrders,
 } from "../db/schema";
+import { getSetting } from "./settings";
 import { AppError, notFound } from "../errors";
 import { nextNumber } from "./numbering";
 import { move } from "./stock";
+import { int } from "../http";
 
-/* ---------- Input contracts ---------- */
-const int = z.number().int().safe();
 const DiscountIn = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("amount"), valuePt: int.nonnegative() }),
   z.object({ mode: z.literal("percent"), valueBp: int.min(0).max(10_000) }),
@@ -50,18 +50,12 @@ export const EditIn = z.object({
 });
 export const CancelIn = z.object({ reason: z.string().trim().min(3, "اكتب سبب الإلغاء.").max(500), expectedVersion: int.positive().optional() });
 
-/* ---------- Helpers ---------- */
-async function setting<T>(db: Db, key: string, fallback: T): Promise<T> {
-  const [r] = await db.select({ value: settings.value }).from(settings).where(eq(settings.key, key));
-  return (r?.value as T) ?? fallback;
-}
-
 export async function totalsFor(tx: Db, statementLines: { category: Category; qtyMilli: number; unitPricePt: number }[], discounts: Partial<Record<Category, Discount>>, taxExempt: boolean) {
-  const enabled = await setting<Category[]>(tx, "discounts.categories", ["labor", "part"]);
+  const enabled = await getSetting<Category[]>(tx, "discounts.categories");
   for (const c of Object.keys(discounts) as Category[]) {
     if (!enabled.includes(c)) throw new AppError(422, "discount_disabled", "هذا النوع من الخصم غير مفعّل في الإعدادات.");
   }
-  const vat = await setting<{ enabled: boolean; rateBp: Partial<Record<Category, number>> }>(tx, "vat", { enabled: false, rateBp: {} });
+  const vat = await getSetting<{ enabled: boolean; rateBp: Partial<Record<Category, number>> }>(tx, "vat");
   return computeTotals({ lines: statementLines, discounts, vatBp: vat.enabled ? vat.rateBp : undefined, taxExempt });
 }
 
@@ -111,7 +105,6 @@ async function snapshot(tx: Db, statementId: string) {
 
 const activeLines = (tx: Db, statementId: string) => tx.select().from(docLines).where(and(eq(docLines.statementId, statementId), isNull(docLines.archivedAt)));
 
-/* ---------- Finalize: work order → statement ---------- */
 export async function finalizeStatement(db: Db, actor: Actor, raw: unknown) {
   const input = FinalizeIn.parse(raw);
   if (!can(actor.role, "statement.create")) throw new AppError(403, "forbidden", deniedMessage("statement.create"));
@@ -144,7 +137,6 @@ export async function finalizeStatement(db: Db, actor: Actor, raw: unknown) {
   });
 }
 
-/* ---------- Admin edit of a saved statement ---------- */
 const BYTE_LOCKED = "هذا بيان قديم من بايت للأرشيف فقط، ولا يُعدّل أو يُلغى.";
 
 export async function editStatement(db: Db, actor: Actor, statementId: string, raw: unknown) {
@@ -242,7 +234,6 @@ export async function cancelStatement(db: Db, actor: Actor, statementId: string,
   });
 }
 
-/* ---------- Read ---------- */
 export async function getStatement(db: Db, actor: Actor, statementId: string) {
   const [st] = await db.select().from(statements).where(eq(statements.id, statementId));
   if (!st) throw notFound("البيان");
@@ -257,7 +248,3 @@ export async function getStatement(db: Db, actor: Actor, statementId: string) {
   };
 }
 
-export async function customerBalancePt(db: Db, customerId: string) {
-  const [r] = await db.select({ b: sql<string>`coalesce(sum(${customerLedger.amountPt}), 0)` }).from(customerLedger).where(eq(customerLedger.customerId, customerId));
-  return Number(r.b);
-}

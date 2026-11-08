@@ -10,10 +10,9 @@ import {
   cashMovements, customerLedger, customers, docLines, odometerReadings, paymentMethods, payments, plateTypes, statements, users, vehicles, workOrders,
 } from "../db/schema";
 import { AppError, notFound } from "../errors";
-import { customerBalancePt } from "./statements";
+import { customerBalancePt } from "./ledger";
+import { Id, opt } from "../http";
 
-const Id = z.object({ id: z.uuid() });
-const opt = (max: number) => z.string().trim().max(max).nullable().optional();
 const CustomerIn = z.object({
   id: z.uuid().optional(),
   name: z.string().trim().min(2, "اكتب اسم العميل.").max(120),

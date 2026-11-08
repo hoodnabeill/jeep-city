@@ -10,16 +10,10 @@ import { cashMovements, paymentMethods, purchaseLines, purchases, stockLevels, s
 import { AppError, notFound } from "../errors";
 import { nextNumber } from "./numbering";
 import { move } from "./stock";
+import { supplierBalancePt } from "./ledger";
+import { Id, int, opt } from "../http";
 
-const Id = z.object({ id: z.uuid() });
-const int = z.number().int().safe();
-const opt = (n: number) => z.string().trim().max(n).nullable().optional();
 const SupplierIn = z.object({ id: z.uuid().optional(), name: z.string().trim().min(2).max(120), contact: opt(80), phone: opt(30), whatsapp: opt(30), address: opt(200), notes: opt(1000), openingBalancePt: int.optional() });
-
-async function supplierBalance(db: Db, id: string) {
-  const [r] = await db.select({ b: sql<string>`coalesce(sum(${supplierLedger.amountPt}), 0)` }).from(supplierLedger).where(eq(supplierLedger.supplierId, id));
-  return Number(r.b);
-}
 
 async function payOut(tx: Db, actor: { id: string }, supplierId: string, methodId: string, amountPt: number, refType: string, refId: string, reference?: string) {
   const [m] = await tx.select().from(paymentMethods).where(eq(paymentMethods.id, methodId));
@@ -81,7 +75,7 @@ export function purchasingRoutes(app: FastifyInstance, db: Db, auth: preHandlerH
       await audit(tx, actor, "supplier.payment", "supplier", id, null, p);
     });
     reply.status(201);
-    return { balancePt: await supplierBalance(db, id) };
+    return { balancePt: await supplierBalancePt(db, id) };
   });
 
   /** Purchase invoice: stock in at cost (weighted average updates), supplier owes/paid. */

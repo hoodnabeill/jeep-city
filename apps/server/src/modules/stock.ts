@@ -7,7 +7,7 @@
  * when goods arrive, the average resets to the new cost.
  */
 import { and, eq, isNull, sql } from "drizzle-orm";
-import { can, deniedMessage, divRound, uuidv7, type Category } from "@jc/core";
+import { can, deniedMessage, divRound, uuidv7 } from "@jc/core";
 import { audit, type Actor } from "../audit";
 import type { Db } from "../db/client";
 import { docLines, items, itemVariants, stockLevels, stockMovements, warehouses, workOrders } from "../db/schema";

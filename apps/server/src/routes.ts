@@ -5,6 +5,7 @@ import { actorOf, authenticate, requirePerm } from "./auth/auth";
 import type { Config } from "./config";
 import type { Db } from "./db/client";
 import { reserveBlock } from "./modules/numbering";
+import { AppError } from "./errors";
 import { adjust, issueToWorkOrder, level } from "./modules/stock";
 import { cancelStatement, editStatement, finalizeStatement, getStatement } from "./modules/statements";
 import { adminRoutes } from "./modules/admin";
@@ -20,8 +21,8 @@ import { alertRoutes } from "./modules/alerts";
 import { shareRoutes } from "./modules/share";
 import { conditionRoutes } from "./modules/condition";
 import { fileRoutes } from "./modules/files";
+import { Id } from "./http";
 
-const Id = z.object({ id: z.uuid() });
 const Issue = z.object({ variantId: z.uuid(), qtyMilli: z.number().int().positive(), reason: z.string().max(500).optional(), lineId: z.uuid().optional(), technicianId: z.uuid().optional() });
 const Adjust = z.object({ variantId: z.uuid(), qtyMilli: z.number().int().refine((n) => n !== 0), reason: z.string().trim().min(3).max(500) });
 const Block = z.object({ series: z.literal("work_order"), size: z.number().int().min(1).max(200).default(20) });
@@ -65,7 +66,7 @@ export function routes(app: FastifyInstance, db: Db, cfg: Config) {
   app.post("/numbers/blocks", { preHandler: [auth, requirePerm("workOrder.create")] }, async (req) => {
     const b = Block.parse(req.body ?? {});
     const deviceId = actorOf(req).deviceId;
-    if (!deviceId) throw Object.assign(new Error("x-device-id header required"), { statusCode: 400 });
+    if (!deviceId) throw new AppError(400, "device_required", "رمز الجهاز مطلوب.");
     return db.transaction((tx) => reserveBlock(tx, b.series, deviceId, b.size));
   });
 }

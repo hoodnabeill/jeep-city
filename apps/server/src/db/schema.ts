@@ -37,7 +37,6 @@ export const moveKindEnum = pgEnum("movement_kind", [
 export const payKindEnum = pgEnum("payment_kind", ["statement", "debt_settlement", "refund"]);
 export const checkEnum = pgEnum("check_status", ["good", "watch", "urgent"]);
 
-/* ---------- Users, devices, settings ---------- */
 export const users = pgTable("users", {
   ...base(), ...archived(),
   username: text("username").notNull(),
@@ -87,7 +86,6 @@ export const files = pgTable("files", {
   path: text("path").notNull(),
 });
 
-/* ---------- Customers and vehicles ---------- */
 export const customers = pgTable("customers", {
   ...base(), ...archived(),
   name: text("name").notNull(),
@@ -147,7 +145,6 @@ export const odometerReadings = pgTable("odometer_readings", {
   overrideReason: text("override_reason"),
 }, (t) => [index("odometer_vehicle_ix").on(t.vehicleId)]);
 
-/* ---------- Items and stock ---------- */
 export const warehouses = pgTable("warehouses", { ...base(), name: text("name").notNull() });
 
 export const itemCategories = pgTable("item_categories", { ...base(), ...archived(), name: text("name").notNull() });
@@ -223,7 +220,6 @@ export const packageLines = pgTable("package_lines", {
   qtyMilli: bigint("qty_milli", { mode: "number" }).notNull(),
 });
 
-/* ---------- Work orders, intake, condition reports ---------- */
 export const workOrders = pgTable("work_orders", {
   ...base(), ...archived(),
   number: bigint("number", { mode: "number" }),
@@ -297,7 +293,6 @@ export const conditionItems = pgTable("condition_items", {
   recommendedPricePt: money("recommended_price_pt"),
 });
 
-/* ---------- Statements and money ---------- */
 export const statements = pgTable("statements", {
   ...base(),
   /** assigned by the server at finalize, gap-free (D-16) */
@@ -380,7 +375,6 @@ export const customerLedger = pgTable("customer_ledger", {
   refId: uuid("ref_id"),
 }, (t) => [index("cledger_customer_ix").on(t.customerId)]);
 
-/* ---------- Suppliers and purchases ---------- */
 export const suppliers = pgTable("suppliers", {
   ...base(), ...archived(),
   name: text("name").notNull(),
@@ -422,7 +416,6 @@ export const supplierLedger = pgTable("supplier_ledger", {
   refId: uuid("ref_id"),
 });
 
-/* ---------- Cash drawer, expenses, bonuses ---------- */
 export const cashSessions = pgTable("cash_sessions", {
   ...base(),
   openedAt: ts("opened_at").notNull(),
@@ -468,7 +461,6 @@ export const bonuses = pgTable("bonuses", {
   statementId: uuid("statement_id").references(() => statements.id),
 });
 
-/* ---------- Reminders, sharing ---------- */
 export const reminders = pgTable("reminders", {
   ...base(), ...archived(),
   vehicleId: uuid("vehicle_id").references(() => vehicles.id),
@@ -489,7 +481,6 @@ export const shareTokens = pgTable("share_tokens", {
   revokedAt: ts("revoked_at"),
 }, (t) => [uniqueIndex("share_token_uq").on(t.tokenHash)]);
 
-/* ---------- Audit, numbering, sync ---------- */
 export const auditLog = pgTable("audit_log", {
   id: uuid("id").primaryKey(),
   at: ts("at").notNull().defaultNow(),
@@ -525,7 +516,6 @@ export const syncMutations = pgTable("sync_mutations", {
   at: ts("at").notNull().defaultNow(),
 });
 
-/* ---------- Sales returns (مرتجع المبيعات) ---------- */
 export const salesReturns = pgTable("sales_returns", {
   ...base(),
   number: bigint("number", { mode: "number" }).notNull(),

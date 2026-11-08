@@ -14,11 +14,9 @@ import { AppError } from "../errors";
 /** Only the sync push handler knows this, so only its internal replays can claim to be offline writes. */
 export const REPLAY_SECRET = randomBytes(24).toString("hex");
 
-/* ---------- Passwords (argon2id) ---------- */
 export const hashPassword = (pw: string) => hash(pw); // @node-rs/argon2 defaults to argon2id
 export const verifyPassword = (stored: string, pw: string) => verify(stored, pw).catch(() => false);
 
-/* ---------- Tokens ---------- */
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
 async function issueTokens(db: Db, cfg: Config, user: { id: string; role: Role }, deviceId: string | null, familyId = uuidv7()) {
@@ -36,7 +34,6 @@ async function issueTokens(db: Db, cfg: Config, user: { id: string; role: Role }
 
 const SESSION_ENDED = () => new AppError(401, "session_ended", "انتهت الجلسة. سجّل الدخول مرة أخرى.");
 
-/* ---------- Request user ---------- */
 declare module "fastify" {
   interface FastifyRequest { actor?: Actor }
 }
@@ -71,7 +68,6 @@ export function requirePerm(action: Action) {
   };
 }
 
-/* ---------- Routes ---------- */
 const Login = z.object({ username: z.string().trim().min(1).max(64), password: z.string().min(1).max(256), deviceId: z.string().max(64).optional() });
 const Refresh = z.object({ refreshToken: z.string().min(20).max(200) });
 

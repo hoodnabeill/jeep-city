@@ -2,7 +2,7 @@
 import { and, desc, eq, gte, ilike, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
-import { amountInWords, computeTotals, divRound, searchKey, uuidv7 } from "@jc/core";
+import { amountInWords, divRound, searchKey, uuidv7 } from "@jc/core";
 import { audit } from "../audit";
 import { actorOf, requirePerm } from "../auth/auth";
 import type { Db } from "../db/client";
@@ -14,8 +14,8 @@ import { AppError, notFound } from "../errors";
 import { nextNumber } from "./numbering";
 import { recordPayments, totalsFor, validatePayments } from "./statements";
 import { move } from "./stock";
+import { int } from "../http";
 
-const int = z.number().int().safe();
 
 export function salesRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHandler) {
   app.get("/statements", { preHandler: auth }, async (req) => {

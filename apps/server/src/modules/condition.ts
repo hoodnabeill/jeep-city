@@ -9,7 +9,8 @@ import { z } from "zod";
 import { actorOf } from "../auth/auth";
 import { audit } from "../audit";
 import type { Db } from "../db/client";
-import { conditionItems, conditionReports, docLines, settings, workOrders } from "../db/schema";
+import { conditionItems, conditionReports, docLines, workOrders } from "../db/schema";
+import { getSetting } from "./settings";
 import { AppError } from "../errors";
 
 const Item = z.object({
@@ -34,8 +35,7 @@ export function conditionRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
     const { id } = z.object({ id: z.uuid() }).parse(req.params);
     const { report } = await load(db, id);
     if (report) return { saved: true, updatedAt: report.updatedAt, items: await db.select().from(conditionItems).where(eq(conditionItems.reportId, report.id)).orderBy(asc(conditionItems.createdAt)) };
-    const [s] = await db.select({ v: settings.value }).from(settings).where(eq(settings.key, "condition.checklist"));
-    const list = (s?.v as { system: string; item: string }[] | undefined) ?? [];
+    const list = await getSetting<{ system: string; item: string }[]>(db, "condition.checklist");
     return { saved: false, updatedAt: null, items: list.map((x) => ({ ...x, status: "good", note: null, recommendedText: null, recommendedPricePt: null })) };
   });
 

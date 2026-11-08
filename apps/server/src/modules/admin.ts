@@ -8,8 +8,8 @@ import { actorOf, hashPassword, requirePerm } from "../auth/auth";
 import type { Db } from "../db/client";
 import { auditLog, numberSeries, paymentMethods, plateTypes, purchases, settings, statements, technicians, users, workOrders } from "../db/schema";
 import { AppError, notFound } from "../errors";
+import { Id } from "../http";
 
-const Id = z.object({ id: z.uuid() });
 
 export function adminRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHandler) {
   const admin = [auth, requirePerm("settings.manage")];
@@ -69,7 +69,6 @@ export function adminRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
     return { series, next };
   });
 
-  /* Users */
   const UserIn = z.object({
     username: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,32}$/, "اسم الدخول: حروف إنجليزية وأرقام فقط (3 إلى 32)."),
     displayName: z.string().trim().min(2).max(60),
@@ -105,7 +104,6 @@ export function adminRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
     return { id };
   });
 
-  /* Technicians (separate from users) */
   const TechIn = z.object({ name: z.string().trim().min(2).max(60), phone: z.string().trim().max(30).optional(), active: z.boolean().optional() });
   app.get("/technicians", { preHandler: auth }, async () => db.select().from(technicians).where(isNull(technicians.archivedAt)).orderBy(technicians.name));
   app.post("/technicians", { preHandler: admin }, async (req, reply) => {
@@ -122,7 +120,6 @@ export function adminRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
     return { id };
   });
 
-  /* Audit log */
   app.get("/audit", { preHandler: [auth, requirePerm("audit.view")] }, async (req) => {
     const q = z.object({ entity: z.string().optional(), entityId: z.string().optional(), from: z.iso.date().optional(), to: z.iso.date().optional(), limit: z.coerce.number().int().min(1).max(500).default(100) }).parse(req.query);
     const where = and(
