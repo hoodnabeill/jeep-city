@@ -1,0 +1,1 @@
+CREATE INDEX "wo_customer_ix" ON "work_orders" USING btree ("customer_id");

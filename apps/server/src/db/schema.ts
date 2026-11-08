@@ -250,7 +250,7 @@ export const workOrders = pgTable("work_orders", {
   estimatePt: money("estimate_pt"),
   signatureFileId: uuid("signature_file_id"),
   warehouseId: uuid("warehouse_id").references(() => warehouses.id),
-}, (t) => [uniqueIndex("wo_number_uq").on(t.number), index("wo_vehicle_ix").on(t.vehicleId), index("wo_status_ix").on(t.status)]);
+}, (t) => [uniqueIndex("wo_number_uq").on(t.number), index("wo_vehicle_ix").on(t.vehicleId), index("wo_status_ix").on(t.status), index("wo_customer_ix").on(t.customerId)]);
 
 export const workOrderTechnicians = pgTable("work_order_technicians", {
   workOrderId: uuid("work_order_id").notNull().references(() => workOrders.id),

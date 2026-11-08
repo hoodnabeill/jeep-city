@@ -80,9 +80,9 @@ export function customerRoutes(app: FastifyInstance, db: Db, auth: preHandlerHoo
     const showBal = can(actorOf(req).role, "customer.viewBalance");
     const owing = sql`${customers.id} in (select ${customerLedger.customerId} from ${customerLedger} group by ${customerLedger.customerId} having sum(${customerLedger.amountPt}) > 0)`;
     const where = and(isNull(customers.archivedAt), key ? or(ilike(customers.nameKey, `%${key}%`), ilike(customers.mobile, `%${key}%`)) : undefined, q.debt && showBal ? owing : undefined);
-    // Most recent visit first; customers never seen in the shop go last.
-    const lastVisit = sql`(select max(${workOrders.enteredAt}) from ${workOrders} where ${workOrders.customerId} = ${customers.id})`;
-    const list = await db.select().from(customers).where(where).orderBy(sql`${lastVisit} desc nulls last`, desc(customers.createdAt)).limit(300);
+    // Most recent visit first; customers never seen in the shop go last. One grouped pass over work orders, not one lookup per customer.
+    const lv = db.select({ customerId: workOrders.customerId, last: sql<Date>`max(${workOrders.enteredAt})`.as("last_visit") }).from(workOrders).groupBy(workOrders.customerId).as("lv");
+    const list = (await db.select({ c: customers }).from(customers).leftJoin(lv, eq(lv.customerId, customers.id)).where(where).orderBy(sql`${lv.last} desc nulls last`, desc(customers.createdAt)).limit(300)).map((r) => r.c);
     const [{ total }] = await db.select({ total: count() }).from(customers).where(where);
     const ids = list.map((c) => c.id);
     const cars = ids.length ? await db.select().from(vehicles).where(and(inArray(vehicles.customerId, ids), isNull(vehicles.archivedAt))) : [];
