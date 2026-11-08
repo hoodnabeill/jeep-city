@@ -60,4 +60,19 @@ describe("untangle regressions", () => {
     expect((await call("GET", `/customers/${customerId}`, t.engineerToken)).json().whatsapp).toBe("201001112233");
     expect((await call("PATCH", `/customers/${customerId}`, t.engineerToken, { whatsapp: "123" })).statusCode).toBe(422);
   });
+
+  it("an old statement stays editable after its discount category is switched off", async () => {
+    const wo = await makeWorkOrder(t.db, t.adminId, 30001);
+    const part = await makeItem(t.db, { code: "D-1", name: "قطعة بخصم", type: "part", pricePt: egp(100) });
+    await stockIn(t.db, part.variantId, 3, egp(50));
+    await call("POST", `/work-orders/${wo.id}/issue`, t.adminToken, { variantId: part.variantId, qtyMilli: qty(1) });
+    const st = uuidv7();
+    expect((await call("POST", "/statements", t.adminToken, { id: st, workOrderId: wo.id, discounts: { part: { mode: "amount", valuePt: egp(10) } }, payments: [{ methodId: "cash", amountPt: egp(90) }] })).statusCode).toBe(201);
+    await call("PUT", "/settings/discounts.categories", t.adminToken, { value: ["labor"] });
+    const edit = await call("PATCH", `/statements/${st}`, t.adminToken, { expectedVersion: 1, reason: "تصحيح ملاحظة", notDone: "x", discounts: { part: { mode: "amount", valuePt: egp(10) } } });
+    expect(edit.statusCode).toBe(200);
+    const added = await call("PATCH", `/statements/${st}`, t.adminToken, { expectedVersion: 2, reason: "خصم جديد", discounts: { part: { mode: "amount", valuePt: egp(20) } } });
+    expect(added.statusCode).toBe(422);
+    await call("PUT", "/settings/discounts.categories", t.adminToken, { value: ["labor", "part"] });
+  });
 });

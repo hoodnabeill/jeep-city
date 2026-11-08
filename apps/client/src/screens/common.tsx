@@ -4,7 +4,7 @@ import { Avatar, Badge, Button, Field, Input, Plate, Select, useFmt } from "@jc/
 import { normalizePlate, PLATE_LETTERS, unusualPlateLetters, whatsappLink } from "@jc/core";
 import { daysIn, Link, since } from "../lib";
 import { usePlateTypes } from "../data/plates";
-import { useApi, useLongStayDays } from "../data/hooks";
+import { useApi } from "../data/hooks";
 import type { PlateType, WOStatus, WOType, WorkOrderRow } from "../data/types";
 
 export const WO_STATUS: Record<WOStatus, { label: string; tone: "work" | "ok" | "neutral" | "bad" }> = {
@@ -86,10 +86,9 @@ export function PlateInput({ value, onChange, error }: { value: PlateValue; onCh
   );
 }
 
-export function CarTile({ wo }: { wo: WorkOrderRow }) {
+export function CarTile({ wo, longDays }: { wo: WorkOrderRow; longDays: number }) {
   const f = useFmt();
   const days = daysIn(wo.enteredAt);
-  const longDays = useLongStayDays();
   return (
     <Link to={`/work-orders/${wo.id}`} className="car-tile">
       <div className="car-tile__top">

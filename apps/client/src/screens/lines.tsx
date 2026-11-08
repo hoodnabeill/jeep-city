@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { ScanLine, Search, Trash2 } from "lucide-react";
 import { Badge, GradeBadge, IconButton, Kbd, Money, Select, useFmt } from "@jc/ui";
-import { computeTotals, type Category, type Discount } from "@jc/core";
+import { computeTotals, toMilli, type Category, type Discount } from "@jc/core";
 import { api } from "../data/api";
 import { qs } from "../data/hooks";
 import type { CatalogHit, Line, Technician } from "../data/types";
 
 /** Totals with the real formulas (packages/core/src/totals.ts). */
-export const totalsOf = (lines: Pick<Line, "category" | "qtyMilli" | "unitPricePt">[], discounts: Partial<Record<Category, Discount>> = {}) =>
-  computeTotals({ lines, discounts });
+export type Vat = { enabled: boolean; rateBp: Partial<Record<Category, number>> };
+export const NO_VAT: Vat = { enabled: false, rateBp: {} };
+export const totalsOf = (lines: Pick<Line, "category" | "qtyMilli" | "unitPricePt">[], discounts: Partial<Record<Category, Discount>> = {}, vat: Vat = NO_VAT) =>
+  computeTotals({ lines, discounts, vatBp: vat.enabled ? vat.rateBp : undefined });
 
 export function LinesTable({ kind, lines, editable, technicians = [], onAdd, onChange, onRemove, issueMode }: {
   kind: "labor" | "parts"; lines: Line[]; editable: boolean; technicians?: Technician[]; issueMode?: boolean;
@@ -86,7 +88,7 @@ export function LinesTable({ kind, lines, editable, technicians = [], onAdd, onC
 function QtyInput({ line, onCommit }: { line: Line; onCommit: (qtyMilli: number) => void }) {
   const [v, setV] = useState(String(line.qtyMilli / 1000));
   const commit = () => {
-    const q = Math.round(Number(v.replace(",", ".")) * 1000);
+    const q = toMilli(v);
     if (!Number.isFinite(q) || q <= 0) { setV(String(line.qtyMilli / 1000)); return; }
     if (q !== line.qtyMilli) onCommit(q);
   };

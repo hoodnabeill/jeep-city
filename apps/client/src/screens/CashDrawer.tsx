@@ -27,7 +27,7 @@ export function CashDrawer() {
   const [mov, setMov] = useState<{ kind: "deposit" | "withdrawal"; amount: string; note: string } | null>(null);
   const c = cur.data;
   if (!c) return <PageState loading={cur.loading} error={cur.error} onRetry={cur.reload} />;
-  const countedPt = Math.round((Number(counted) || 0) * 100);
+  const countedPt = toPt(counted) || 0;
   const diff = c.open && counted ? countedPt - c.expectedPt : 0;
   return (
     <div className="stack">

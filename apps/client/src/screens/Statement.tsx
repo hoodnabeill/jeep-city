@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { CircleCheck, History, LockKeyhole, MoreHorizontal, PenLine, Plus, Printer, ReceiptText, Save, Trash2, TriangleAlert, XCircle } from "lucide-react";
 import { Badge, Button, DL, Dialog, Field, IconButton, Input, Menu, Money, Panel, Segmented, Select, Textarea, useFmt, useToast, When } from "@jc/ui";
-import { amountInWords, uuidv7, type Category, type Discount } from "@jc/core";
+import { amountInWords, uuidv7, toPt, type Category, type Discount } from "@jc/core";
 import { PageHead, PageState } from "../shell/Shell";
 import { go, Link, useHotkey, useIsAdmin } from "../lib";
 import { api, ApiError } from "../data/api";
-import { invalidateAll, useAction, useApi } from "../data/hooks";
+import { invalidateAll, useAction, useApi, useSetting } from "../data/hooks";
 import { STATEMENT_KIND, type Customer, type Line, type PaymentMethod, type Statement, type Technician, type WorkOrder } from "../data/types";
-import { LinesTable, totalsOf } from "./lines";
+import { LinesTable, NO_VAT, totalsOf, type Vat } from "./lines";
 import { carName, CarPlate, WhatsAppButton } from "./common";
 
 type Disc = { mode: "amount" | "pct"; value: string };
@@ -34,6 +34,7 @@ export function StatementScreen({ id }: { id?: string }) {
 
 function StatementView({ saved, wo, customer, methods }: { saved?: Statement; wo?: WorkOrder; customer?: Customer; methods: PaymentMethod[] }) {
   const isAdmin = useIsAdmin();
+  const vat = useSetting<Vat>("vat", NO_VAT);
   const f = useFmt();
   const toast = useToast();
   const run = useAction();
@@ -63,8 +64,8 @@ function StatementView({ saved, wo, customer, methods }: { saved?: Statement; wo
   const dl = toDiscount(dLabor), dp = toDiscount(dParts);
   if (dl) discounts.labor = dl;
   if (dp) discounts.part = dp;
-  const t = locked ? saved!.totals : totalsOf(lines, discounts);
-  const payPt = (p: PayRow) => Math.round((Number(p.amount) || 0) * 100);
+  const t = locked ? saved!.totals : totalsOf(lines, discounts, vat);
+  const payPt = (p: PayRow) => toPt(p.amount) || 0;
   const isCredit = (id: string) => methods.find((m) => m.id === id)?.isCredit;
   const paid = pays.filter((p) => !isCredit(p.methodId)).reduce((a, p) => a + payPt(p), 0);
   const credit = pays.filter((p) => isCredit(p.methodId)).reduce((a, p) => a + payPt(p), 0);

@@ -50,10 +50,11 @@ export const EditIn = z.object({
 });
 export const CancelIn = z.object({ reason: z.string().trim().min(3, "اكتب سبب الإلغاء.").max(500), expectedVersion: int.positive().optional() });
 
-export async function totalsFor(tx: Db, statementLines: { category: Category; qtyMilli: number; unitPricePt: number }[], discounts: Partial<Record<Category, Discount>>, taxExempt: boolean) {
+export async function totalsFor(tx: Db, statementLines: { category: Category; qtyMilli: number; unitPricePt: number }[], discounts: Partial<Record<Category, Discount>>, taxExempt: boolean, saved: Partial<Record<Category, Discount>> = {}) {
   const enabled = await getSetting<Category[]>(tx, "discounts.categories");
   for (const c of Object.keys(discounts) as Category[]) {
-    if (!enabled.includes(c)) throw new AppError(422, "discount_disabled", "هذا النوع من الخصم غير مفعّل في الإعدادات.");
+    // A discount already on the saved statement stays editable after its category is switched off in Settings.
+    if (!enabled.includes(c) && JSON.stringify(discounts[c]) !== JSON.stringify(saved[c])) throw new AppError(422, "discount_disabled", "هذا النوع من الخصم غير مفعّل في الإعدادات.");
   }
   const vat = await getSetting<{ enabled: boolean; rateBp: Partial<Record<Category, number>> }>(tx, "vat");
   return computeTotals({ lines: statementLines, discounts, vatBp: vat.enabled ? vat.rateBp : undefined, taxExempt });
@@ -181,7 +182,7 @@ export async function editStatement(db: Db, actor: Actor, statementId: string, r
     }
 
     const discounts = (input.discounts ?? st.discounts) as Partial<Record<Category, Discount>>;
-    const totals = await totalsFor(tx, await activeLines(tx, st.id), discounts, st.taxExempt);
+    const totals = await totalsFor(tx, await activeLines(tx, st.id), discounts, st.taxExempt, st.discounts as Partial<Record<Category, Discount>>);
     const methods = await tx.select().from(paymentMethods);
 
     if (input.payments) {

@@ -43,6 +43,12 @@ export function useAction() {
   }, [toast]);
 }
 
+/** One setting from Settings (the server's defaults apply when it was never saved). */
+export function useSetting<T>(key: string, fallback: T): T {
+  const s = useApi<Record<string, unknown>>("/settings").data;
+  return (s?.[key] as T | undefined) ?? fallback;
+}
+
 /** Days in the shop before a car counts as a long stay (Settings → عام). */
 export function useLongStayDays() {
   const s = useApi<Record<string, unknown>>("/settings").data;

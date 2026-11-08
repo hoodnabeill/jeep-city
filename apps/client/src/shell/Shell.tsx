@@ -3,9 +3,9 @@ import {
   ArrowRight, BarChart3, Bell, CarFront, ChevronDown, CloudOff, FileText, LayoutDashboard, LogOut, Package, RefreshCw,
   Search, Settings, Truck, Users, UserRoundCog, Wallet, Wifi, Plus, Wrench, Receipt,
 } from "lucide-react";
-import { Avatar, GRADE_LABEL, Kbd, useFmt } from "@jc/ui";
+import { Avatar, GRADE_LABEL, Kbd, useDigits, useFmt } from "@jc/ui";
 import { api } from "../data/api";
-import { useApi, useLongStayDays, qs } from "../data/hooks";
+import { useApi, useLongStayDays, useSetting, qs } from "../data/hooks";
 import { dismissFailure } from "../data/local";
 import { useSyncState } from "../data/sync";
 import type { Customer, Item, LookupHit, StatementRow, Supplier, WorkOrderRow } from "../data/types";
@@ -34,6 +34,10 @@ function activeNav(path: string) {
 
 export function Shell({ path, children }: { path: string; children: ReactNode }) {
   const isAdmin = useIsAdmin();
+  // The digit style chosen in Settings applies on every screen and survives a reload.
+  const { setDigits } = useDigits();
+  const savedDigits = useSetting<string | null>("display.digits", null);
+  useEffect(() => { if (savedDigits === "latn" || savedDigits === "arab") setDigits(savedDigits); }, [savedDigits, setDigits]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   useHotkey("k", () => setPaletteOpen(true));
   const inShop = useApi<WorkOrderRow[]>("/work-orders?status=in_shop");

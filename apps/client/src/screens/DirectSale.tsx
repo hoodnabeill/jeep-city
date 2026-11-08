@@ -5,15 +5,16 @@ import { amountInWords, uuidv7, toMilli } from "@jc/core";
 import { PageHead } from "../shell/Shell";
 import { go } from "../lib";
 import { api } from "../data/api";
-import { qs, useAction, useApi } from "../data/hooks";
+import { qs, useAction, useApi, useSetting } from "../data/hooks";
 import type { CatalogHit, Customer, PaymentMethod } from "../data/types";
-import { totalsOf } from "./lines";
+import { NO_VAT, totalsOf, type Vat } from "./lines";
 
 /** بيع مباشر: parts or oil sold over the counter, no car or work order. */
 export function DirectSale() {
   const f = useFmt();
   const run = useAction();
   const methods = useApi<PaymentMethod[]>("/payment-methods");
+  const vat = useSetting<Vat>("vat", NO_VAT);
   const [cq, setCq] = useState("");
   const customers = useApi<Customer[]>(cq.trim().length >= 2 ? `/customers?${qs({ q: cq.trim() })}` : null);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -27,7 +28,7 @@ export function DirectSale() {
     const t = setTimeout(() => api<CatalogHit[]>(`/catalog?${qs({ q: q.trim(), kind: "parts" })}`).then(setHits).catch(() => {}), 150);
     return () => clearTimeout(t);
   }, [q]);
-  const t = totalsOf(lines.map((l) => ({ category: l.hit.type, qtyMilli: Math.round((Number(l.qty) || 0) * 1000), unitPricePt: l.hit.sellPricePt })));
+  const t = totalsOf(lines.map((l) => ({ category: l.hit.type, qtyMilli: toMilli(l.qty) || 0, unitPricePt: l.hit.sellPricePt })), {}, vat);
   const m = methods.data?.find((x) => x.id === methodId);
   const save = async () => {
     const r = await run(() => api<{ id: string; number: number }>("/direct-sales", { method: "POST", body: {

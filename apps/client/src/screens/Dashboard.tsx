@@ -58,7 +58,7 @@ export function Dashboard() {
             <div className="board__col" key={title}>
               <div className="board__head"><span>{title}</span><span className="num">{f.n(list.length)}</span></div>
               <div className="board__list">
-                {list.map((w) => <CarTile key={w.id} wo={w} />)}
+                {list.map((w) => <CarTile key={w.id} wo={w} longDays={longDays} />)}
                 {list.length === 0 && <p className="board__empty">{shop.loading ? "جاري التحميل…" : "لا توجد سيارات هنا الآن."}</p>}
               </div>
             </div>
