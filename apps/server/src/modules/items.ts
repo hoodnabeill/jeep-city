@@ -23,6 +23,8 @@ const VariantIn = z.object({
   openingQtyMilli: int.nonnegative().optional(),
   openingCostPt: int.nonnegative().optional(),
 });
+/** On PATCH an omitted variant field means "keep it"; the creation defaults would silently reset grade, minimum and active. */
+const VariantPatch = VariantIn.extend({ grade: VariantIn.shape.grade.removeDefault().optional(), minQtyMilli: int.nonnegative().optional(), active: z.boolean().optional() });
 const ItemIn = z.object({
   id: z.uuid().optional(),
   code: z.string().trim().min(1).max(32),
@@ -136,7 +138,7 @@ export function itemRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHan
 
   app.patch("/items/:id", { preHandler: manage }, async (req) => {
     const { id } = Id.parse(req.params);
-    const input = ItemIn.partial().parse(req.body);
+    const input = ItemIn.partial().extend({ variants: z.array(VariantPatch).min(1).max(5).optional() }).parse(req.body);
     const actor = actorOf(req);
     await db.transaction(async (tx) => {
       const [it] = await tx.select().from(items).where(eq(items.id, id));
@@ -151,10 +153,10 @@ export function itemRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHan
       for (const v of input.variants ?? []) {
         const [old] = v.id ? await tx.select().from(itemVariants).where(and(eq(itemVariants.id, v.id), eq(itemVariants.itemId, id))) : [];
         if (old) {
-          await tx.update(itemVariants).set({ grade: v.grade, sellPricePt: v.sellPricePt, barcode: v.barcode === undefined ? old.barcode : v.barcode || null, minQtyMilli: v.minQtyMilli, active: v.active, updatedAt: new Date() }).where(eq(itemVariants.id, old.id));
+          await tx.update(itemVariants).set({ grade: v.grade === undefined ? old.grade : v.grade, sellPricePt: v.sellPricePt, barcode: v.barcode === undefined ? old.barcode : v.barcode || null, minQtyMilli: v.minQtyMilli ?? old.minQtyMilli, active: v.active ?? old.active, updatedAt: new Date() }).where(eq(itemVariants.id, old.id));
           if (old.sellPricePt !== v.sellPricePt) await audit(tx, actor, "item.price_change", "variant", old.id, { sellPricePt: old.sellPricePt }, { sellPricePt: v.sellPricePt });
         } else {
-          await tx.insert(itemVariants).values({ id: v.id ?? uuidv7(), itemId: id, grade: v.grade, sellPricePt: v.sellPricePt, barcode: v.barcode || null, minQtyMilli: v.minQtyMilli, active: v.active, createdBy: actor.id });
+          await tx.insert(itemVariants).values({ id: v.id ?? uuidv7(), itemId: id, grade: v.grade ?? null, sellPricePt: v.sellPricePt, barcode: v.barcode || null, minQtyMilli: v.minQtyMilli ?? 0, active: v.active ?? true, createdBy: actor.id });
         }
       }
       await audit(tx, actor, "item.update", "item", id, it, input);

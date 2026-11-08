@@ -15,7 +15,7 @@ import {
 } from "../db/schema";
 import { AppError, notFound } from "../errors";
 import { nextNumber } from "./numbering";
-import { issueToWorkOrder, mainWarehouseId, move } from "./stock";
+import { guardOverIssue, issueToWorkOrder, lockLevel, mainWarehouseId, move } from "./stock";
 
 const Id = z.object({ id: z.uuid() });
 const LineParams = z.object({ id: z.uuid(), lineId: z.uuid() });
@@ -201,14 +201,8 @@ export function workOrderRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
       if (p.qtyMilli !== undefined && line.stockQtyMilli && line.variantId && p.qtyMilli !== line.stockQtyMilli) {
         const more = p.qtyMilli - line.stockQtyMilli;
         if (more > 0) {
-          const [lvl] = await tx.select().from(stockLevels).where(eq(stockLevels.variantId, line.variantId));
-          if (more > (lvl?.qtyMilli ?? 0)) {
-            if (actor.offline) await audit(tx, actor, "stock.offline_over_issue", "variant", line.variantId, { availableMilli: lvl?.qtyMilli ?? 0 }, { qtyMilli: more, workOrderId: id });
-            else {
-              if (!can(actor.role, "stock.issueOverAvailable")) throw new AppError(409, "not_enough_stock", deniedMessage("stock.issueOverAvailable"));
-              if (!p.reason) throw new AppError(422, "reason_required", "اكتب سبب الصرف بأكثر من المتاح.");
-            }
-          }
+          const lvl = await lockLevel(tx, line.variantId, wo.warehouseId ?? (await mainWarehouseId(tx)));
+          await guardOverIssue(tx, actor, { variantId: line.variantId, availableMilli: lvl.qtyMilli, qtyMilli: more, reason: p.reason, workOrderId: id });
         }
         await move(tx, actor, { variantId: line.variantId, warehouseId: wo.warehouseId ?? undefined, qtyMilli: -more, kind: more > 0 ? "issue_out" : "issue_return", refType: "doc_line", refId: line.id, reason: p.reason });
       }

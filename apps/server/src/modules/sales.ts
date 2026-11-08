@@ -12,6 +12,7 @@ import {
 } from "../db/schema";
 import { AppError, notFound } from "../errors";
 import { nextNumber } from "./numbering";
+import { recordPayments, totalsFor, validatePayments } from "./statements";
 import { move } from "./stock";
 
 const int = z.number().int().safe();
@@ -60,15 +61,8 @@ export function salesRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
         if (!row) throw notFound("الصنف");
         lines.push({ ...l, v: row.v, i: row.i });
       }
-      const totals = computeTotals({ lines: lines.map((l) => ({ category: l.i.type, qtyMilli: l.qtyMilli, unitPricePt: l.v.sellPricePt })) });
-      const methods = await tx.select().from(paymentMethods);
-      for (const p of d.payments) {
-        const m = methods.find((x) => x.id === p.methodId);
-        if (!m || !m.active) throw new AppError(422, "bad_method", "طريقة الدفع غير موجودة أو غير مفعّلة.");
-        if (m.needsReference && !p.reference) throw new AppError(422, "reference_required", `اكتب رقم المرجع لدفعة ${m.label}.`);
-      }
-      const sum = d.payments.reduce((a, p) => a + p.amountPt, 0);
-      if (sum !== totals.amountDuePt) throw new AppError(422, "payments_mismatch", `مجموع الدفعات (${sum / 100}) لا يساوي المطلوب (${totals.amountDuePt / 100}).`);
+      const totals = await totalsFor(tx, lines.map((l) => ({ category: l.i.type, qtyMilli: l.qtyMilli, unitPricePt: l.v.sellPricePt })), {}, false);
+      const methods = await validatePayments(tx, d.payments, totals.amountDuePt);
       const number = await nextNumber(tx, "direct_sale");
       const now = new Date();
       await tx.insert(statements).values({ id: d.id, number, kind: "direct_sale", customerId: d.customerId, statementDate: now.toLocaleDateString("en-CA", { timeZone: "Africa/Cairo" }), exitAt: now, discounts: {}, totals, amountDuePt: totals.amountDuePt, createdBy: actor.id, deviceId: actor.deviceId ?? null });
@@ -78,13 +72,7 @@ export function salesRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
         if (l.i.trackStock) await move(tx, actor, { variantId: l.v.id, qtyMilli: -l.qtyMilli, kind: "sale_out", refType: "doc_line", refId: lineId });
       }
       await tx.insert(customerLedger).values({ id: uuidv7(), customerId: d.customerId, amountPt: totals.amountDuePt, kind: "statement", refType: "statement", refId: d.id, createdBy: actor.id });
-      for (const p of d.payments) {
-        const m = methods.find((x) => x.id === p.methodId)!;
-        const pid = uuidv7();
-        await tx.insert(payments).values({ id: pid, statementId: d.id, customerId: d.customerId, methodId: m.id, amountPt: p.amountPt, reference: p.reference ?? null, kind: "statement", paidAt: now, createdBy: actor.id });
-        if (m.isCash) await tx.insert(cashMovements).values({ id: uuidv7(), amountPt: p.amountPt, kind: "statement_payment", refType: "payment", refId: pid, movedAt: now, createdBy: actor.id });
-        if (!m.isCredit) await tx.insert(customerLedger).values({ id: uuidv7(), customerId: d.customerId, amountPt: -p.amountPt, kind: "payment", refType: "payment", refId: pid, createdBy: actor.id });
-      }
+      await recordPayments(tx, actor, { id: d.id, customerId: d.customerId }, d.payments, methods, "statement");
       await audit(tx, actor, "directSale.create", "statement", d.id, null, { number, amountDuePt: totals.amountDuePt });
       return { id: d.id, number, totals, amountInWords: amountInWords(totals.amountDuePt) };
     });

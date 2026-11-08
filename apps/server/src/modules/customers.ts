@@ -127,8 +127,8 @@ export function customerRoutes(app: FastifyInstance, db: Db, auth: preHandlerHoo
     const c = CustomerIn.partial().omit({ openingBalancePt: true }).parse(req.body);
     const [old] = await db.select().from(customers).where(eq(customers.id, id));
     if (!old) throw notFound("العميل");
-    if (c.whatsapp && !egyptMobile(c.whatsapp)) throw new AppError(422, "bad_whatsapp", "رقم الواتساب غير صحيح. اكتب رقم موبايل مصري مثل 01001234567.");
-    await db.update(customers).set({ ...c, ...(c.name ? { nameKey: searchKey(c.name) } : {}), updatedAt: new Date() }).where(eq(customers.id, id));
+    const wa = c.whatsapp ? checkPhones({ ...c, name: old.name }) : undefined;
+    await db.update(customers).set({ ...c, ...(wa ? { whatsapp: wa } : {}), ...(c.name ? { nameKey: searchKey(c.name) } : {}), updatedAt: new Date() }).where(eq(customers.id, id));
     await audit(db, actorOf(req), "customer.update", "customer", id, old, c);
     return { id };
   });

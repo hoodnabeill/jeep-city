@@ -22,7 +22,7 @@ export async function mainWarehouseId(db: Db): Promise<string> {
   return w.id;
 }
 
-async function lockLevel(tx: Db, variantId: string, warehouseId: string) {
+export async function lockLevel(tx: Db, variantId: string, warehouseId: string) {
   await tx.insert(stockLevels).values({ variantId, warehouseId }).onConflictDoNothing();
   const [lvl] = await tx.select().from(stockLevels)
     .where(and(eq(stockLevels.variantId, variantId), eq(stockLevels.warehouseId, warehouseId))).for("update");
@@ -67,7 +67,22 @@ export async function level(db: Db, variantId: string) {
   return l ?? { variantId, qtyMilli: 0, avgCostPt: 0 };
 }
 
-const typeToCategory = (t: string): Category => (t === "labor" || t === "part" || t === "oil" || t === "material" || t === "paint" ? t : "part");
+/**
+ * The one rule for taking more than the shelf holds: offline PCs are accepted and flagged (D-42); otherwise engineers
+ * are refused and admins need a reason, which is audited.
+ */
+export async function guardOverIssue(tx: Db, actor: Actor, o: { variantId: string; availableMilli: number; qtyMilli: number; reason?: string; workOrderId: string }) {
+  if (o.qtyMilli <= o.availableMilli) return;
+  const detail = { qtyMilli: o.qtyMilli, workOrderId: o.workOrderId };
+  if (actor.offline) {
+    // The part already left the shelf while the PC was offline.
+    await audit(tx, actor, "stock.offline_over_issue", "variant", o.variantId, { availableMilli: o.availableMilli }, detail);
+    return;
+  }
+  if (!can(actor.role, "stock.issueOverAvailable")) throw new AppError(409, "not_enough_stock", deniedMessage("stock.issueOverAvailable"), { availableMilli: o.availableMilli });
+  if (!o.reason?.trim()) throw new AppError(422, "reason_required", "اكتب سبب الصرف بأكثر من المتاح.");
+  await audit(tx, actor, "stock.over_issue", "variant", o.variantId, { availableMilli: o.availableMilli }, { ...detail, reason: o.reason });
+}
 
 /**
  * Parts issue (إذن صرف): add a line to an open work order and take the stock out now (D-14).
@@ -86,20 +101,11 @@ export async function issueToWorkOrder(db: Db, actor: Actor, input: { workOrderI
     let lowStock = false;
     if (it.trackStock) {
       const lvl = await lockLevel(tx, v.id, wo.warehouseId ?? (await mainWarehouseId(tx)));
-      if (input.qtyMilli > lvl.qtyMilli) {
-        if (actor.offline) {
-          // The part already left the shelf while the PC was offline: accept it and flag it for Admin (D-42).
-          await audit(tx, actor, "stock.offline_over_issue", "variant", v.id, { availableMilli: lvl.qtyMilli }, { qtyMilli: input.qtyMilli, workOrderId: wo.id });
-        } else {
-          if (!can(actor.role, "stock.issueOverAvailable")) throw new AppError(409, "not_enough_stock", deniedMessage("stock.issueOverAvailable"), { availableMilli: lvl.qtyMilli });
-          if (!input.reason?.trim()) throw new AppError(422, "reason_required", "اكتب سبب الصرف بأكثر من المتاح.");
-          await audit(tx, actor, "stock.over_issue", "variant", v.id, { availableMilli: lvl.qtyMilli }, { qtyMilli: input.qtyMilli, reason: input.reason, workOrderId: wo.id });
-        }
-      }
+      await guardOverIssue(tx, actor, { variantId: v.id, availableMilli: lvl.qtyMilli, qtyMilli: input.qtyMilli, reason: input.reason, workOrderId: wo.id });
     }
     const lineId = input.lineId ?? uuidv7();
     await tx.insert(docLines).values({
-      id: lineId, workOrderId: wo.id, category: typeToCategory(it.type), itemId: it.id, variantId: v.id, code: it.code, name: it.nameAr,
+      id: lineId, workOrderId: wo.id, category: it.type, itemId: it.id, variantId: v.id, code: it.code, name: it.nameAr,
       grade: v.grade, unit: it.unit, qtyMilli: input.qtyMilli, unitPricePt: v.sellPricePt, technicianId: input.technicianId ?? null,
       stockQtyMilli: it.trackStock ? input.qtyMilli : 0, createdBy: actor.id, deviceId: actor.deviceId ?? null,
     });

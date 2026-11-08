@@ -56,7 +56,7 @@ async function setting<T>(db: Db, key: string, fallback: T): Promise<T> {
   return (r?.value as T) ?? fallback;
 }
 
-async function totalsFor(tx: Db, statementLines: { category: Category; qtyMilli: number; unitPricePt: number }[], discounts: Partial<Record<Category, Discount>>, taxExempt: boolean) {
+export async function totalsFor(tx: Db, statementLines: { category: Category; qtyMilli: number; unitPricePt: number }[], discounts: Partial<Record<Category, Discount>>, taxExempt: boolean) {
   const enabled = await setting<Category[]>(tx, "discounts.categories", ["labor", "part"]);
   for (const c of Object.keys(discounts) as Category[]) {
     if (!enabled.includes(c)) throw new AppError(422, "discount_disabled", "هذا النوع من الخصم غير مفعّل في الإعدادات.");
@@ -67,7 +67,7 @@ async function totalsFor(tx: Db, statementLines: { category: Category; qtyMilli:
 
 const fmt = (pt: number) => (pt / 100).toLocaleString("en-US", { maximumFractionDigits: 2 });
 
-async function validatePayments(tx: Db, list: z.infer<typeof PaymentIn>[], duePt: number) {
+export async function validatePayments(tx: Db, list: z.infer<typeof PaymentIn>[], duePt: number) {
   const methods = await tx.select().from(paymentMethods);
   for (const p of list) {
     const m = methods.find((x) => x.id === p.methodId);
@@ -80,7 +80,7 @@ async function validatePayments(tx: Db, list: z.infer<typeof PaymentIn>[], duePt
 }
 
 /** Record payments of a statement: payment rows, cash for cash methods, ledger credit for non-credit methods. */
-async function recordPayments(tx: Db, actor: Actor, st: { id: string; customerId: string }, list: z.infer<typeof PaymentIn>[], methods: (typeof paymentMethods.$inferSelect)[], kind: "statement" | "refund") {
+export async function recordPayments(tx: Db, actor: Actor, st: { id: string; customerId: string }, list: z.infer<typeof PaymentIn>[], methods: (typeof paymentMethods.$inferSelect)[], kind: "statement" | "refund") {
   for (const p of list) {
     const m = methods.find((x) => x.id === p.methodId)!;
     const amount = kind === "refund" ? -p.amountPt : p.amountPt;
