@@ -29,14 +29,12 @@ let accessToken: string | null = null;
 // shortcut: refresh token in localStorage; move to the OS keychain via Tauri in Phase 6 (D-60).
 export const hasStoredSession = () => !!store.get(REFRESH_KEY);
 
-/* ---------- Connection state for the top bar ---------- */
 export type Conn = "online" | "syncing" | "offline";
 let conn: Conn = "online", inFlight = 0;
 const connListeners = new Set<(c: Conn) => void>();
 function setConn(c: Conn) { if (c !== conn) { conn = c; connListeners.forEach((f) => f(c)); } }
 export const onConn = (f: (c: Conn) => void) => { connListeners.add(f); f(conn); return () => { connListeners.delete(f); }; };
 
-/* ---------- Session events (expired → back to login) ---------- */
 const sessionListeners = new Set<() => void>();
 export const onSessionEnded = (f: () => void) => { sessionListeners.add(f); return () => { sessionListeners.delete(f); }; };
 
@@ -181,7 +179,6 @@ export async function logout() {
   if (t) await api("/auth/logout", { method: "POST", body: { refreshToken: t } }).catch(() => {});
 }
 
-/* ---------- Users who logged in on this PC (for the quick pick on the login screen) ---------- */
 const RECENT_KEY = "jc.recentUsers";
 export type RecentUser = { username: string; name: string; role: "admin" | "engineer" };
 export const recentUsers = (): RecentUser[] => { try { return JSON.parse(store.get(RECENT_KEY) ?? "[]"); } catch { return []; } };

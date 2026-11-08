@@ -3,9 +3,9 @@ import {
   ArrowRight, BarChart3, Bell, CarFront, ChevronDown, CloudOff, FileText, LayoutDashboard, LogOut, Package, RefreshCw,
   Search, Settings, Truck, Users, UserRoundCog, Wallet, Wifi, Plus, Wrench, Receipt,
 } from "lucide-react";
-import { Avatar, GRADE_LABEL, Kbd, Plate, useFmt } from "@jc/ui";
+import { Avatar, GRADE_LABEL, Kbd, useFmt } from "@jc/ui";
 import { api } from "../data/api";
-import { useApi, qs } from "../data/hooks";
+import { useApi, useLongStayDays, qs } from "../data/hooks";
 import { dismissFailure } from "../data/local";
 import { useSyncState } from "../data/sync";
 import type { Customer, Item, LookupHit, StatementRow, Supplier, WorkOrderRow } from "../data/types";
@@ -83,7 +83,7 @@ function TopBar({ onSearch, inShop }: { onSearch: () => void; inShop: WorkOrderR
     offline: { icon: <CloudOff />, label: q.pending ? `غير متصل · ${f.n(q.pending)} بانتظار الرفع` : "غير متصل", cls: "is-offline" },
   }[sync];
   const feed = useApi<{ reminders: { id: string; customerName: string | null; note: string | null; dueDate: string | null; dueKm: number | null }[]; debts: { id: string; name: string; balance: number }[] }>("/alerts");
-  const longDays = Number(useApi<Record<string, unknown>>("/settings").data?.["workshop.longStayDays"] ?? 3);
+  const longDays = useLongStayDays();
   const longStay = inShop.filter((w) => daysIn(w.enteredAt) >= longDays);
   const lowList = low.data ?? [];
   const dueList = feed.data?.reminders ?? [], debtList = feed.data?.debts ?? [];

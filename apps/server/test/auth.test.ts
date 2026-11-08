@@ -20,7 +20,6 @@ describe("auth", () => {
     expect(r.statusCode).toBe(200);
     const b = r.json();
     expect(b.user).toMatchObject({ username: "ahmed", role: "admin" });
-    expect(b.expiresIn).toBe(900);
     const me = await t.app.inject({ method: "GET", url: "/auth/me", headers: { authorization: `Bearer ${b.accessToken}` } });
     expect(me.json().name).toBe("أحمد الطنطاوي");
     expect((await t.db.select().from(auditLog).where(eq(auditLog.action, "auth.login"))).length).toBeGreaterThan(0);

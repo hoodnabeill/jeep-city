@@ -3,7 +3,7 @@ import { Badge, Button, GRADE_LABEL, Money, Panel, useFmt, When } from "@jc/ui";
 import { CarPlate, CarTile, StatusBadge } from "./common";
 import { PageHead, PageState } from "../shell/Shell";
 import { daysIn, go, Link, useIsAdmin } from "../lib";
-import { useApi } from "../data/hooks";
+import { useApi, useLongStayDays } from "../data/hooks";
 import type { Dashboard as Dash, StatementRow, WorkOrderRow } from "../data/types";
 
 export function Dashboard() {
@@ -18,7 +18,8 @@ export function Dashboard() {
   const inShop = shop.data ?? [];
   const open = inShop.filter((w) => w.status === "open");
   const ready = inShop.filter((w) => w.status === "ready");
-  const longStay = inShop.filter((w) => daysIn(w.enteredAt) >= 3);
+  const longDays = useLongStayDays();
+  const longStay = inShop.filter((w) => daysIn(w.enteredAt) >= longDays);
 
   return (
     <div className="stack">

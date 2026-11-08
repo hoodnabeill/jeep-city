@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Eraser, MessageCircle } from "lucide-react";
 import { Avatar, Badge, Button, Field, Input, Plate, Select, useFmt } from "@jc/ui";
-import { normalizePlate, PLATE_LETTERS, unusualPlateLetters } from "@jc/core";
-import { daysIn, Link, since, waLink } from "../lib";
+import { normalizePlate, PLATE_LETTERS, unusualPlateLetters, whatsappLink } from "@jc/core";
+import { daysIn, Link, since } from "../lib";
 import { usePlateTypes } from "../data/plates";
-import { useApi } from "../data/hooks";
+import { useApi, useLongStayDays } from "../data/hooks";
 import type { PlateType, WOStatus, WOType, WorkOrderRow } from "../data/types";
 
 export const WO_STATUS: Record<WOStatus, { label: string; tone: "work" | "ok" | "neutral" | "bad" }> = {
@@ -89,6 +89,7 @@ export function PlateInput({ value, onChange, error }: { value: PlateValue; onCh
 export function CarTile({ wo }: { wo: WorkOrderRow }) {
   const f = useFmt();
   const days = daysIn(wo.enteredAt);
+  const longDays = useLongStayDays();
   return (
     <Link to={`/work-orders/${wo.id}`} className="car-tile">
       <div className="car-tile__top">
@@ -102,7 +103,7 @@ export function CarTile({ wo }: { wo: WorkOrderRow }) {
       {wo.complaint && <p className="car-tile__complaint">{wo.complaint}</p>}
       <div className="car-tile__foot">
         <span className="car-tile__eng">{wo.engineer && <><Avatar name={wo.engineer} />{wo.engineer}</>}</span>
-        {days >= 3 ? <Badge tone="warn">{since(wo.enteredAt)}</Badge> : <span>{since(wo.enteredAt)}</span>}
+        {days >= longDays ? <Badge tone="warn">{since(wo.enteredAt)}</Badge> : <span>{since(wo.enteredAt)}</span>}
       </div>
       {wo.type !== "repair" && <div><Badge tone="outline">{WO_TYPE[wo.type]}</Badge></div>}
     </Link>
@@ -110,7 +111,7 @@ export function CarTile({ wo }: { wo: WorkOrderRow }) {
 }
 
 export function WhatsAppButton({ phone, text, size = "sm", label = "واتساب" }: { phone?: string | null; text?: string; size?: "sm" | "md"; label?: string }) {
-  const href = phone ? waLink(phone, text) : null;
+  const href = phone ? whatsappLink(phone, text) : null;
   if (!href) return <Button size={size} variant="whatsapp" disabled title="رقم الواتساب غير صحيح أو غير مسجل" icon={<MessageCircle />}>{label}</Button>;
   return (
     <a className={`btn btn--whatsapp${size === "sm" ? " btn--sm" : ""}`} href={href} target="_blank" rel="noreferrer" title={`فتح محادثة واتساب: +${href.split("/")[3].split("?")[0]}`}>

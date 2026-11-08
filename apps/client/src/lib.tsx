@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, type AnchorHTMLAttributes, type ReactNode } from "react";
-import { searchKey, whatsappLink } from "@jc/core";
 import { api, ApiError, hasStoredSession, login, logout, onConn, onSessionEnded, refreshSession, rememberUser, setApiUser, type Conn } from "./data/api";
 import { startSync, stopSync } from "./data/sync";
 
@@ -29,7 +28,6 @@ export function Link({ to, ...rest }: AnchorHTMLAttributes<HTMLAnchorElement> & 
   return <a href={`#${to}`} {...rest} />;
 }
 
-/* ---------- Session ---------- */
 export type SessionUser = { id: string; name: string; username: string; role: "admin" | "engineer" };
 type Session = { user: SessionUser | null; ready: boolean; sync: Conn; signIn: (u: string, p: string) => Promise<void>; signOut: () => Promise<void> };
 const SessionCtx = createContext<Session>(null!);
@@ -66,11 +64,7 @@ const lastUser = (): SessionUser | null => { try { return JSON.parse(localStorag
 export const useSession = () => useContext(SessionCtx);
 export const useIsAdmin = () => useSession().user?.role === "admin";
 
-/* ---------- Search and WhatsApp: the tested versions in @jc/core ---------- */
-export const norm = searchKey;
-export const waLink = (raw: string, text?: string) => whatsappLink(raw, text);
 
-/* ---------- Keyboard shortcuts ---------- */
 export function useHotkey(key: string, fn: (e: KeyboardEvent) => void, deps: unknown[] = []) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {

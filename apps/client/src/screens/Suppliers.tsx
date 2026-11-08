@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Banknote, FilePlus2, Plus, RotateCcw, Search, Trash2, UserPlus, X } from "lucide-react";
 import { Button, Dialog, Field, GradeBadge, IconButton, Input, Money, Panel, Segmented, Select, useFmt, When } from "@jc/ui";
-import { uuidv7 } from "@jc/core";
+import { uuidv7, toPt, toMilli } from "@jc/core";
 import { PageHead, PageState } from "../shell/Shell";
 import { queryParam } from "../lib";
 import { api } from "../data/api";
@@ -84,7 +84,7 @@ export function Suppliers() {
       {doc && <PurchaseDialog kind={doc} suppliers={rows} supplierId={s?.id ?? rows[0]?.id} methods={methods.data ?? []} onClose={() => setDoc(null)} />}
       <Dialog open={!!pay} onClose={() => setPay(null)} title={`دفعة للمورد · ${s?.name ?? ""}`}
         footer={<><Button onClick={() => setPay(null)}>رجوع</Button><Button variant="primary" disabled={!pay?.amount || !s} onClick={async () => {
-          const r = await run(() => api(`/suppliers/${s!.id}/payments`, { method: "POST", body: { methodId: pay!.methodId, amountPt: Math.round(Number(pay!.amount) * 100), reference: pay!.reference || undefined } }), "سُجلت الدفعة.");
+          const r = await run(() => api(`/suppliers/${s!.id}/payments`, { method: "POST", body: { methodId: pay!.methodId, amountPt: toPt(pay!.amount), reference: pay!.reference || undefined } }), "سُجلت الدفعة.");
           if (r) setPay(null);
         }}>حفظ الدفعة</Button></>}>
         {pay && <div className="form-grid" style={{ ["--cols" as string]: 2 }}>
@@ -131,8 +131,8 @@ function PurchaseDialog({ kind, suppliers, supplierId, methods, onClose }: { kin
   const total = lines.reduce((a, l) => a + value(l), 0);
   const save = async () => {
     const body = kind === "purchase"
-      ? { id: uuidv7(), supplierId: sup, purchaseDate: date, supplierRef: ref || undefined, payment: payment === "credit" ? "credit" : "paid", paidMethodId: methodId, lines: lines.map((l) => ({ variantId: l.hit.variantId, qtyMilli: Math.round(Number(l.qty) * 1000), unitCostPt: Math.round(Number(l.cost) * 100) })) }
-      : { id: uuidv7(), supplierId: sup, purchaseDate: date, refund: payment === "cash" ? "cash" : "credit", reason: ref, lines: lines.map((l) => ({ variantId: l.hit.variantId, qtyMilli: Math.round(Number(l.qty) * 1000), unitCostPt: Math.round(Number(l.cost) * 100) })) };
+      ? { id: uuidv7(), supplierId: sup, purchaseDate: date, supplierRef: ref || undefined, payment: payment === "credit" ? "credit" : "paid", paidMethodId: methodId, lines: lines.map((l) => ({ variantId: l.hit.variantId, qtyMilli: toMilli(l.qty), unitCostPt: toPt(l.cost) })) }
+      : { id: uuidv7(), supplierId: sup, purchaseDate: date, refund: payment === "cash" ? "cash" : "credit", reason: ref, lines: lines.map((l) => ({ variantId: l.hit.variantId, qtyMilli: toMilli(l.qty), unitCostPt: toPt(l.cost) })) };
     const r = await run(() => api<{ number: number }>(kind === "purchase" ? "/purchases" : "/purchase-returns", { method: "POST", body }), kind === "purchase" ? "تم حفظ فاتورة المشتريات ودخلت الكميات المخزن." : "تم حفظ المرتجع وخرجت الكميات من المخزن.");
     if (r) onClose();
   };

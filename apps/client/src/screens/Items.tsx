@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PackageSearch, Pencil, Plus, QrCode, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import {
   Badge, Button, Chip, DL, Dialog, EmptyState, Field, GradeBadge, GRADE_LABEL, IconButton, Input, Money, Panel, Segmented, Select, useFmt, When,
@@ -9,6 +9,7 @@ import { api } from "../data/api";
 import { qs, useAction, useApi } from "../data/hooks";
 import type { Grade, Item, Movement, Variant } from "../data/types";
 import { QrLabel, useLabelSize } from "./Labels";
+import { toPt, toMilli } from "@jc/core";
 
 type ItemType = Item["type"];
 const TYPE_LABEL: Record<ItemType, string> = { part: "قطع غيار", oil: "زيوت", material: "خامات", labor: "مصنعيات", paint: "بويات" };
@@ -84,8 +85,8 @@ function ItemDialog({ item, onClose }: { item?: Item; onClose: () => void }) {
     const body = {
       ...d, nameEn: d.nameEn || null, location: d.location || null,
       variants: vs.map((v) => ({
-        id: v.id, grade: v.grade || null, sellPricePt: Math.round(Number(v.price) * 100), minQtyMilli: Math.round(Number(v.min || 0) * 1000), barcode: v.barcode || null,
-        ...(!item && v.opening ? { openingQtyMilli: Math.round(Number(v.opening) * 1000), openingCostPt: Math.round(Number(v.cost || 0) * 100) } : {}),
+        id: v.id, grade: v.grade || null, sellPricePt: toPt(v.price), minQtyMilli: toMilli(v.min || 0), barcode: v.barcode || null,
+        ...(!item && v.opening ? { openingQtyMilli: toMilli(v.opening), openingCostPt: toPt(v.cost || 0) } : {}),
       })),
     };
     const r = await run(() => api(item ? `/items/${item.id}` : "/items", { method: item ? "PATCH" : "POST", body }), item ? "تم حفظ الصنف." : "تمت إضافة الصنف.");
@@ -207,7 +208,7 @@ export function ItemDetail({ id }: { id: string }) {
       {edit && <ItemDialog item={it} onClose={() => setEdit(false)} />}
       <Dialog open={!!adj} onClose={() => setAdj(null)} title={`تسوية رصيد · ${it.nameAr}${v.grade ? ` (${GRADE_LABEL[v.grade]})` : ""}`}
         footer={<><Button onClick={() => setAdj(null)}>رجوع</Button><Button variant="primary" disabled={!adj?.qty || Number(adj.qty) === 0 || (adj?.reason.trim().length ?? 0) < 3} onClick={async () => {
-          const r = await run(() => api("/stock/adjust", { method: "POST", body: { variantId: v.id, qtyMilli: Math.round(Number(adj!.qty) * 1000), reason: adj!.reason } }), "تمت التسوية وسُجلت في سجل المراجعة.");
+          const r = await run(() => api("/stock/adjust", { method: "POST", body: { variantId: v.id, qtyMilli: toMilli(adj!.qty), reason: adj!.reason } }), "تمت التسوية وسُجلت في سجل المراجعة.");
           if (r) setAdj(null);
         }}>حفظ التسوية</Button></>}>
         <div className="form-grid" style={{ ["--cols" as string]: 2 }}>

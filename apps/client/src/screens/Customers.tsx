@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { firstName } from "@jc/core";
+import { firstName, toPt } from "@jc/core";
 import { Banknote, CarFront, Gauge, History as HistoryIcon, Plus, Search, UserPlus } from "lucide-react";
 import { Button, Chip, DL, Dialog, Field, Input, Money, Panel, Select, useFmt, When } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
@@ -190,7 +190,7 @@ export function CustomerFile({ id, vehicleId }: { id?: string; vehicleId?: strin
 
       <Dialog open={!!collect} onClose={() => setCollect(null)} title={`تحصيل مديونية · ${c.name}`}
         footer={<><Button onClick={() => setCollect(null)}>رجوع</Button><Button variant="primary" disabled={!collect?.amount} onClick={async () => {
-          const r = await run(() => api(`/customers/${c.id}/payments`, { method: "POST", body: { methodId: collect!.methodId, amountPt: Math.round(Number(collect!.amount) * 100), reference: collect!.reference || undefined } }), "سُجل التحصيل.");
+          const r = await run(() => api(`/customers/${c.id}/payments`, { method: "POST", body: { methodId: collect!.methodId, amountPt: toPt(collect!.amount), reference: collect!.reference || undefined } }), "سُجل التحصيل.");
           if (r) setCollect(null);
         }}>تسجيل التحصيل</Button></>}>
         {collect && <div className="form-grid" style={{ ["--cols" as string]: 2 }}>

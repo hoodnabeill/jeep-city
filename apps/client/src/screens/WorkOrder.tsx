@@ -4,14 +4,14 @@ import {
 } from "lucide-react";
 import { Badge, Button, DL, Dialog, Field, Input, Money, Panel, Select, Tabs, Textarea, useFmt, When } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
-import { go, Link, useHotkey, waLink } from "../lib";
+import { go, Link, useHotkey } from "../lib";
 import { api } from "../data/api";
 import { useAction, useApi } from "../data/hooks";
 import type { CatalogHit, Line, Package, Technician, WorkOrder, WOStatus } from "../data/types";
 import { LinesTable, totalsOf } from "./lines";
-import { CarDiagram, MARK_KIND } from "./CarDiagram";
+import { CarDiagram, MARK_KIND, toDiagramMarks } from "./CarDiagram";
 import { carName, CarPlate, SignaturePad, useWaTemplates, WhatsAppButton, WO_TYPE } from "./common";
-import { fillTemplate, firstName } from "@jc/core";
+import { fillTemplate, firstName, toPt, whatsappLink } from "@jc/core";
 
 
 export function WorkOrderScreen({ id }: { id: string }) {
@@ -130,7 +130,7 @@ export function WorkOrderScreen({ id }: { id: string }) {
             <div className="stack">
               <Panel title="حالة الجسم عند الاستلام" sub={`${f.n(wo.marks.length)} علامات`}>
                 <div className="stack" style={{ gap: 16 }}>
-                  <CarDiagram marks={wo.marks.map((m, i) => ({ id: i + 1, x: m.x / 10, y: m.y / 10, kind: m.kind, note: m.note ?? "" }))} readOnly />
+                  <CarDiagram marks={toDiagramMarks(wo.marks)} readOnly />
                   {wo.marks.length > 0 ? (
                     <ul className="marks">
                       {wo.marks.map((m, i) => <li key={m.id}><span className={`pin ${MARK_KIND[m.kind].cls}`}>{i + 1}</span><span><b>{MARK_KIND[m.kind].label}</b> · {m.note}</span><span /></li>)}
@@ -196,7 +196,7 @@ export function WorkOrderScreen({ id }: { id: string }) {
 
       <Dialog open={approveOpen} onClose={() => setApproveOpen(false)} title="تسجيل موافقة على تكلفة جديدة"
         footer={<><Button onClick={() => setApproveOpen(false)}>رجوع</Button><Button variant="primary" disabled={!approval.newPt || !approval.by.trim()} onClick={async () => {
-          const r = await run(() => api(`/work-orders/${id}/approvals`, { method: "POST", body: { newPt: Math.round(Number(approval.newPt) * 100), approvedByName: approval.by, method: approval.method } }), "سُجلت الموافقة.");
+          const r = await run(() => api(`/work-orders/${id}/approvals`, { method: "POST", body: { newPt: toPt(approval.newPt), approvedByName: approval.by, method: approval.method } }), "سُجلت الموافقة.");
           if (r) setApproveOpen(false);
         }}>حفظ الموافقة</Button></>}>
         <div className="form-grid" style={{ ["--cols" as string]: 2 }}>
@@ -234,7 +234,7 @@ export function WorkOrderScreen({ id }: { id: string }) {
           <p className="hint-line">تفتح واتساب برسالة جاهزة. النصوص تتعدل من الإعدادات.</p>
           {templates.map((tp) => {
             const text = fillTemplate(tp.text, { "الاسم": firstName(c.name), "السيارة": car, "رقم_الأمر": f.s(wo.number) });
-            const href = waLink(c.whatsapp ?? c.mobile ?? "", text);
+            const href = whatsappLink(c.whatsapp ?? c.mobile ?? "", text);
             return (
               <a key={tp.id} href={href ?? undefined} target="_blank" rel="noreferrer" className="pop__item" style={{ height: "auto", padding: "12px 14px", border: "1px solid var(--line)", textDecoration: "none", display: "grid", gap: 4 }}>
                 <b>{tp.label}</b><span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>{href ? text : "رقم الواتساب غير صحيح أو غير مسجل."}</span>

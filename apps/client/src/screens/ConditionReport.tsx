@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { firstName } from "@jc/core";
+import { firstName, toPt } from "@jc/core";
 import { Printer, Save, Wrench } from "lucide-react";
 import { Badge, Button, Input, Money, Panel, useFmt } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
@@ -111,7 +111,7 @@ function SystemRows({ system, checks, set }: { system: string; checks: CheckItem
                 <div className="row" style={{ flexWrap: "nowrap", gap: 6 }}>
                   <Input size="sm" value={x.recommendedText ?? ""} placeholder="العمل المقترح" aria-label={`العمل المقترح ${x.item}`} onChange={(e) => set(i, { recommendedText: e.target.value || null })} />
                   <Input size="sm" num style={{ width: 110 }} value={x.recommendedPricePt != null ? String(x.recommendedPricePt / 100) : ""} placeholder="السعر" aria-label={`سعر ${x.item}`}
-                    onChange={(e) => { const n = e.target.value.replace(/[^\d.]/g, ""); set(i, { recommendedPricePt: n ? Math.round(Number(n) * 100) : null }); }} />
+                    onChange={(e) => { const n = e.target.value.replace(/[^\d.]/g, ""); set(i, { recommendedPricePt: n ? toPt(n) : null }); }} />
                 </div>
               )}
             </div>

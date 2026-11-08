@@ -41,7 +41,7 @@ export function QrLabel({ r, size, price }: { r: Pick<LabelRow, "qr" | "name" | 
 }
 
 /** Scan mode: keeps the focus so a keyboard-wedge scanner always lands here, unless the user is typing elsewhere. */
-export function ScanInput({ onScan, placeholder }: { onScan: (code: string) => void; placeholder: string }) {
+function ScanInput({ onScan, placeholder }: { onScan: (code: string) => void; placeholder: string }) {
   const ref = useRef<HTMLInputElement>(null);
   const [v, setV] = useState("");
   useEffect(() => {

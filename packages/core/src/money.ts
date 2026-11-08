@@ -5,6 +5,7 @@
  *   quantity  thousandths of a unit (7.5 L = 7500) suffix `Milli`
  *   percent   basis points (12.5 % = 1250 bp)    suffix `Bp`
  */
+import { westernDigits } from "./normalize";
 
 export const PT_PER_EGP = 100;
 export const MILLI = 1000;
@@ -37,22 +38,11 @@ export function percentOf(basePt: number, bp: number): number {
   return divRound(basePt * bp, BP);
 }
 
-/** "13000" | "1250.5" | "1,250.50" → piasters. Throws on anything else. */
-export function parseEgp(text: string): number {
-  const s = text.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[,\s٬]/g, "").replace("٫", ".");
-  if (!/^-?\d+(\.\d{1,2})?$/.test(s)) throw new RangeError(`not an amount: ${text}`);
-  const [whole, frac = ""] = s.replace("-", "").split(".");
-  const pt = Number(whole) * PT_PER_EGP + Number(frac.padEnd(2, "0"));
-  return s.startsWith("-") ? -pt : pt;
-}
-
-/** "7" | "7.5" | "0.125" → thousandths. */
-export function parseQty(text: string): number {
-  const s = text.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace("٫", ".").trim();
-  if (!/^\d+(\.\d{1,3})?$/.test(s)) throw new RangeError(`not a quantity: ${text}`);
-  const [whole, frac = ""] = s.split(".");
-  return Number(whole) * MILLI + Number(frac.padEnd(3, "0"));
-}
 
 export const egp = (pounds: number) => Math.round(pounds * PT_PER_EGP);
 export const qty = (units: number) => Math.round(units * MILLI);
+
+/** What a form field holds ("1,250.5", Arabic digits too) → piasters / thousandths. Not a number gives NaN, which the server rejects. */
+const typed = (x: string | number) => Number(westernDigits(String(x)).replace(/[,\s٬]/g, "").replace("٫", "."));
+export const toPt = (x: string | number) => Math.round(typed(x) * PT_PER_EGP);
+export const toMilli = (x: string | number) => Math.round(typed(x) * MILLI);

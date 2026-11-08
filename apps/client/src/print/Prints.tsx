@@ -1,14 +1,14 @@
 import { useEffect, useState, type ReactNode } from "react";
 import QRCode from "qrcode";
 import { ArrowRight, Printer } from "lucide-react";
-import { Button, GRADE_LABEL, Plate, Segmented, useFmt } from "@jc/ui";
+import { Button, GRADE_LABEL, Segmented, useFmt } from "@jc/ui";
 import { CarPlate } from "../screens/common";
 import { useApi } from "../data/hooks";
 import { api } from "../data/api";
 import { STATEMENT_KIND, type Customer, type Line, type PaymentMethod, type Statement, type Technician, type WorkOrder } from "../data/types";
 import { PageState } from "../shell/Shell";
 import { queryParam } from "../lib";
-import { CarDiagram, MARK_KIND } from "../screens/CarDiagram";
+import { CarDiagram, MARK_KIND, toDiagramMarks } from "../screens/CarDiagram";
 import { CHECK_LABEL, type Condition } from "../screens/ConditionReport";
 import { ReportTable, type ReportData } from "../screens/Reports";
 import { QrLabel, savedLabels, useLabelSize } from "../screens/Labels";
@@ -83,7 +83,6 @@ function netPayments(s: Statement) {
   return [...m].filter(([, x]) => x.amountPt > 0).map(([methodId, x]) => ({ methodId, ...x }));
 }
 
-/* ---------- A4 customer statement (بيان عميل) ---------- */
 export function PrintStatement({ id }: { id: string }) {
   const d = useStatementPrint(id);
   const f = useFmt();
@@ -188,7 +187,6 @@ function PTable({ rows, kind, techs }: { rows: Line[]; kind: "labor" | "parts"; 
   );
 }
 
-/* ---------- A4 Job Card (كارت إصلاح) ---------- */
 export function PrintJobCard({ id }: { id: string }) {
   const q = useApi<WorkOrder>(`/work-orders/${id}`);
   const cust = useApi<Customer>(q.data ? `/customers/${q.data.customer.id}` : null);
@@ -225,7 +223,7 @@ export function PrintJobCard({ id }: { id: string }) {
         <section className="p-two">
           <div>
             <span className="p-cell__l">حالة السيارة عند الاستلام<span className="p-en">Vehicle condition</span></span>
-            <div className="p-diagram"><CarDiagram marks={wo.marks.map((m, i) => ({ id: i + 1, x: m.x / 10, y: m.y / 10, kind: m.kind, note: m.note ?? "" }))} readOnly /></div>
+            <div className="p-diagram"><CarDiagram marks={toDiagramMarks(wo.marks)} readOnly /></div>
             <ol className="p-marks">{wo.marks.map((m, i) => <li key={m.id}><b>{i + 1}</b> {MARK_KIND[m.kind].label}: {m.note}</li>)}{wo.marks.length === 0 && <li>لا توجد علامات</li>}</ol>
           </div>
           <div className="p-side">
@@ -257,7 +255,6 @@ export function PrintJobCard({ id }: { id: string }) {
   );
 }
 
-/* ---------- A4 condition report (design reference; data arrives with the condition-report module) ---------- */
 export function PrintCondition({ id }: { id: string }) {
   const woq = useApi<WorkOrder>(`/work-orders/${id}`);
   const cq = useApi<Condition>(`/work-orders/${id}/condition`);

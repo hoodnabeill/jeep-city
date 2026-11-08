@@ -5,6 +5,7 @@ import { PageHead, PageState } from "../shell/Shell";
 import { api } from "../data/api";
 import { useAction, useApi } from "../data/hooks";
 import type { CashCurrent } from "../data/types";
+import { toPt } from "@jc/core";
 
 const KIND: Record<string, string> = {
   statement_payment: "دفعة بيان", debt_payment: "تحصيل مديونية", refund: "رد مبلغ لعميل", expense: "مصروف", supplier_payment: "دفعة لمورد",
@@ -41,7 +42,7 @@ export function CashDrawer() {
         <Panel title="فتح يومية جديدة">
           <div className="row" style={{ alignItems: "flex-end" }}>
             <Field label="رصيد الافتتاح (الموجود في الدرج الآن)"><Input num type="number" min={0} value={openAmt} onChange={(e) => setOpenAmt(e.target.value)} style={{ width: 220 }} /></Field>
-            <Button variant="primary" icon={<Unlock />} disabled={openAmt === ""} onClick={() => run(() => api("/cash/open", { method: "POST", body: { openingPt: Math.round(Number(openAmt) * 100) } }), "تم فتح اليومية.")}>فتح اليومية</Button>
+            <Button variant="primary" icon={<Unlock />} disabled={openAmt === ""} onClick={() => run(() => api("/cash/open", { method: "POST", body: { openingPt: toPt(openAmt) } }), "تم فتح اليومية.")}>فتح اليومية</Button>
           </div>
         </Panel>
       ) : (
@@ -108,7 +109,7 @@ export function CashDrawer() {
 
       <Dialog open={!!exp} onClose={() => setExp(null)} title="تسجيل مصروف من الصندوق"
         footer={<><Button onClick={() => setExp(null)}>رجوع</Button><Button variant="primary" disabled={!exp?.amount || !exp.categoryId} onClick={async () => {
-          const r = await run(() => api("/expenses", { method: "POST", body: { categoryId: exp!.categoryId, amountPt: Math.round(Number(exp!.amount) * 100), paidBy: exp!.paidBy || undefined, notes: exp!.notes || undefined, fromCash: true } }), "سُجل المصروف وخُصم من الصندوق.");
+          const r = await run(() => api("/expenses", { method: "POST", body: { categoryId: exp!.categoryId, amountPt: toPt(exp!.amount), paidBy: exp!.paidBy || undefined, notes: exp!.notes || undefined, fromCash: true } }), "سُجل المصروف وخُصم من الصندوق.");
           if (r) setExp(null);
         }}>حفظ المصروف</Button></>}>
         {exp && <div className="form-grid" style={{ ["--cols" as string]: 2 }}>
@@ -121,7 +122,7 @@ export function CashDrawer() {
 
       <Dialog open={!!mov} onClose={() => setMov(null)} title="إيداع أو سحب من الصندوق"
         footer={<><Button onClick={() => setMov(null)}>رجوع</Button><Button variant="primary" disabled={!mov?.amount || (mov?.note.trim().length ?? 0) < 2} onClick={async () => {
-          const r = await run(() => api("/cash/movements", { method: "POST", body: { kind: mov!.kind, amountPt: Math.round(Number(mov!.amount) * 100), note: mov!.note } }), "سُجلت الحركة.");
+          const r = await run(() => api("/cash/movements", { method: "POST", body: { kind: mov!.kind, amountPt: toPt(mov!.amount), note: mov!.note } }), "سُجلت الحركة.");
           if (r) setMov(null);
         }}>حفظ</Button></>}>
         {mov && <div className="form-grid" style={{ ["--cols" as string]: 2 }}>

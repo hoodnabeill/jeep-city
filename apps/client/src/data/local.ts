@@ -3,7 +3,7 @@
  * Online, screens read the server. Offline, reads come from here, and the counter's writes (receive a car,
  * add or change lines, hand over with a statement) are queued and applied to the local copy at once.
  */
-import { normalizePlate, parsePlate, plateKey, searchKey, uuidv7, westernDigits } from "@jc/core";
+import { normalizePlate, parsePlate, plateKey, searchKey, uuidv7, westernDigits, plateMatches } from "@jc/core";
 import { kvClear, kvGet, kvSet } from "./store";
 import type { CatalogHit, History, Line, LookupHit, WorkOrder, WorkOrderRow } from "./types";
 
@@ -35,7 +35,6 @@ export function loadLocal() {
   return loaded;
 }
 
-/* ---------- Local copy ---------- */
 export const getCursor = () => cursor;
 const T = (name: string) => (mirror[name] ??= []);
 const keyOf = (name: string, r: Row) => (name === "settings" ? r.key : r.id);
@@ -75,7 +74,6 @@ export async function mergePull(rows: Record<string, Row[]>, nextCursor: number)
   changed();
 }
 
-/* ---------- Outbox ---------- */
 export const pending = () => outbox;
 export const failures = () => failed;
 export async function enqueue(m: Mutation) { outbox.push(m); await kvSet("outbox", outbox); changed(); }
@@ -97,7 +95,6 @@ async function takeNumber() {
   return n;
 }
 
-/* ---------- Views built from the local copy (same shapes as the server) ---------- */
 const live = (r: Row) => !r.archivedAt;
 const userName = (id?: string | null) => T("users").find((u) => u.id === id)?.displayName ?? null;
 const techName = (id?: string | null) => T("technicians").find((t) => t.id === id)?.name ?? null;
@@ -159,7 +156,7 @@ function lookup(q: string): LookupHit[] {
     const c = customers.get(v.customerId);
     const ch = String(v.chassis ?? "");
     return ch.includes(text.toUpperCase()) || (text.length >= 8 && ch.length >= 5 && text.toUpperCase().endsWith(ch))
-      || (plate && String(v.plateKey ?? "").includes(searchKey(plate.letters)) && String(v.plateDigits ?? "").includes(plate.digits))
+      || (plate && plateMatches(text, { letters: String(v.plateLetters ?? ""), digits: String(v.plateDigits ?? "") }))
       || String(c?.nameKey ?? "").includes(key) || String(c?.mobile ?? "").replace(/\D/g, "").includes(key);
   }).slice(0, 30).map((v) => {
     const c = customers.get(v.customerId);
@@ -211,7 +208,6 @@ export function localGet(path: string): unknown {
   return undefined;
 }
 
-/* ---------- Writes that can wait for the connection ---------- */
 const QUEUEABLE: [RegExp, string][] = [
   [/^POST \/customers$/, "عميل جديد"],
   [/^POST \/vehicles$/, "سيارة جديدة"],

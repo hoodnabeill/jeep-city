@@ -3,12 +3,13 @@ import { Plus, Search, SearchX } from "lucide-react";
 import { Badge, Button, EmptyState, Input, Segmented, Select, useFmt, When } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
 import { daysIn, go } from "../lib";
-import { qs, useApi } from "../data/hooks";
+import { qs, useApi, useLongStayDays } from "../data/hooks";
 import type { User, WOStatus, WorkOrderRow } from "../data/types";
 import { carName, CarPlate, StatusBadge, WO_TYPE } from "./common";
 
 export function Reception() {
   const f = useFmt();
+  const longDays = useLongStayDays();
   const [status, setStatus] = useState<"in_shop" | "all" | WOStatus>("in_shop");
   const [eng, setEng] = useState("");
   const [q, setQ] = useState("");
@@ -52,7 +53,7 @@ export function Reception() {
                     <td>{w.customer.name}</td>
                     <td>{w.engineer}</td>
                     <td>{WO_TYPE[w.type]}</td>
-                    <td><StatusBadge status={w.status} />{(w.status === "open" || w.status === "ready") && days >= 3 && <> <Badge tone="warn">{f.n(days)} أيام</Badge></>}</td>
+                    <td><StatusBadge status={w.status} />{(w.status === "open" || w.status === "ready") && days >= longDays && <> <Badge tone="warn">{f.n(days)} أيام</Badge></>}</td>
                     <td style={{ maxWidth: 260 }}><span className="cell-sub" style={{ fontSize: 13, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{w.engineerNotes ?? w.complaint}</span></td>
                   </tr>
                 );

@@ -43,5 +43,11 @@ export function useAction() {
   }, [toast]);
 }
 
+/** Days in the shop before a car counts as a long stay (Settings → عام). */
+export function useLongStayDays() {
+  const s = useApi<Record<string, unknown>>("/settings").data;
+  return Number(s?.["workshop.longStayDays"] ?? 3);
+}
+
 export const qs = (o: Record<string, string | number | boolean | undefined | null>) =>
   Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== "").map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");

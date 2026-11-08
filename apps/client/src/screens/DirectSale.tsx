@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Save, Search, Trash2 } from "lucide-react";
 import { Button, Field, GradeBadge, IconButton, Input, Money, Panel, Select, useFmt } from "@jc/ui";
-import { amountInWords, uuidv7 } from "@jc/core";
+import { amountInWords, uuidv7, toMilli } from "@jc/core";
 import { PageHead } from "../shell/Shell";
 import { go } from "../lib";
 import { api } from "../data/api";
@@ -31,7 +31,7 @@ export function DirectSale() {
   const m = methods.data?.find((x) => x.id === methodId);
   const save = async () => {
     const r = await run(() => api<{ id: string; number: number }>("/direct-sales", { method: "POST", body: {
-      id: uuidv7(), customerId: customer!.id, lines: lines.map((l) => ({ variantId: l.hit.variantId, qtyMilli: Math.round(Number(l.qty) * 1000) })),
+      id: uuidv7(), customerId: customer!.id, lines: lines.map((l) => ({ variantId: l.hit.variantId, qtyMilli: toMilli(l.qty) })),
       payments: t.amountDuePt ? [{ methodId, amountPt: t.amountDuePt, reference: reference || undefined }] : [],
     } }), "تم حفظ البيع المباشر.");
     if (r) go(`/statements/${r.id}`);

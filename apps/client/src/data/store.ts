@@ -22,5 +22,4 @@ function run<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest)
 
 export const kvGet = <T,>(key: string) => run<T>("readonly", (s) => s.get(key));
 export const kvSet = (key: string, value: unknown) => run("readwrite", (s) => s.put(value, key));
-export const kvDel = (key: string) => run("readwrite", (s) => s.delete(key));
 export const kvClear = () => run("readwrite", (s) => s.clear());

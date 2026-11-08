@@ -3,14 +3,13 @@ import { Camera, CarFront, Gauge, Plus, Printer, Search, Trash2, TriangleAlert, 
 import {
   Badge, Button, Chip, Field, IconButton, Input, Panel, Segmented, Select, Switch, Textarea, useFmt, useToast,
 } from "@jc/ui";
-import { uuidv7 } from "@jc/core";
+import { uuidv7, toPt } from "@jc/core";
 import { PageHead } from "../shell/Shell";
 import { go, useIsAdmin, useSession } from "../lib";
 import { api, ApiError } from "../data/api";
 import { qs, useApi } from "../data/hooks";
 import type { History, LookupHit, Technician, User, Vehicle } from "../data/types";
-import type { Mark } from "../mock/data";
-import { CarDiagram, MARK_KIND } from "./CarDiagram";
+import { CarDiagram, MARK_KIND, type Mark } from "./CarDiagram";
 import { carName, CarPlate, EMPTY_PLATE, plateError, PlateInput, SignaturePad } from "./common";
 import { usePlateTypes } from "../data/plates";
 
@@ -101,7 +100,7 @@ export function Intake() {
       const wo = await api<{ id: string; number: number }>("/work-orders", { method: "POST", body: {
         id: uuidv7(), vehicleId, odometerIn: odoNum, odometerReason: lower ? odoReason : undefined, type, complaint, receptionUserId: engineerId,
         repairType, booking, expectedAt: expected, technicianIds: techs, comeback, fuelLevel: fuel, belongings: bel,
-        estimatePt: estimate ? Math.round(Number(estimate) * 100) : null,
+        estimatePt: estimate ? toPt(estimate) : null,
         marks: marks.map((mk) => ({ x: Math.round(mk.x * 10), y: Math.round(mk.y * 10), kind: mk.kind, note: mk.note })),
       } });
       // The signature needs the connection; without it the customer can sign later from the work order.

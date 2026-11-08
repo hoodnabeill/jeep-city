@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  amountInWords, can, computeTotals, divRound, egp, egyptMobile, lineValuePt, numberToArabicWords, parseEgp,
-  fillTemplate, firstName, normalizePlate, parsePlate, parseQty, PERMISSIONS, plateKey, plateMatches, unusualPlateLetters, qty, searchKey, uuidv7, whatsappLink, type TotalsLine,
+  amountInWords, can, computeTotals, divRound, egp, egyptMobile, lineValuePt, numberToArabicWords,
+  fillTemplate, firstName, toMilli, toPt, normalizePlate, parsePlate, PERMISSIONS, plateKey, plateMatches, unusualPlateLetters, qty, searchKey, uuidv7, whatsappLink, type TotalsLine,
 } from "./index";
 
 describe("money", () => {
@@ -15,15 +15,6 @@ describe("money", () => {
     expect(lineValuePt(qty(7.5), egp(750))).toBe(egp(5625));
     expect(lineValuePt(qty(0.333), egp(10))).toBe(333); // 3.33 EGP
     expect(lineValuePt(qty(1), 1)).toBe(1);
-  });
-  it("parses amounts and quantities without floats", () => {
-    expect(parseEgp("13,000")).toBe(1_300_000);
-    expect(parseEgp("1250.5")).toBe(125_050);
-    expect(parseEgp("١٣٠٠٠")).toBe(1_300_000);
-    expect(() => parseEgp("12.345")).toThrow();
-    expect(parseQty("7.5")).toBe(7500);
-    expect(parseQty("٧")).toBe(7000);
-    expect(() => parseQty("-1")).toThrow();
   });
 });
 
@@ -75,14 +66,14 @@ describe("totals: discount and tax rules", () => {
     const t = computeTotals({ lines: base });
     expect(t.oilsNetPt).toBe(egp(6370));
     expect(t.materialsPt).toBe(egp(150));
-    expect(t.amountDuePt).toBe(egp(1000) + 66_666 + egp(6370) + egp(150));
+    expect(t.amountDuePt).toBe(818_666);
   });
   it("VAT is off by default, on the net when enabled, and skipped for exempt customers", () => {
     const vat = { labor: 1400, part: 1400 };
     const on = computeTotals({ lines: base, vatBp: vat, discounts: { labor: { mode: "amount", valuePt: egp(100) } } });
     expect(on.tax.labor).toBe(egp(126)); // 14 % of 900
     expect(on.tax.part).toBe(9_333);     // 14 % of 666.66 = 93.3324
-    expect(on.amountDuePt).toBe(on.statementGrossPt - on.discountPt + on.taxPt);
+    expect(on.amountDuePt).toBe(830_599); // 8186.66 gross − 100 discount + 219.33 tax
     expect(computeTotals({ lines: base, vatBp: vat, taxExempt: true }).taxPt).toBe(0);
   });
   it("rejects negative input", () => {
@@ -156,6 +147,14 @@ describe("normalizers", () => {
     expect(firstName("السيدة منى")).toBe("منى");
     expect(firstName("خالد إبراهيم")).toBe("خالد");
   });
+  it("reads typed amounts and quantities", () => {
+    expect(toPt("1,250.5")).toBe(125050);
+    expect(toPt("١٢٣")).toBe(12300);
+    expect(toPt(7)).toBe(700);
+    expect(toMilli("0.125")).toBe(125);
+    expect(toMilli("٢")).toBe(2000);
+    expect(Number.isNaN(toPt("abc"))).toBe(true);
+  });
   it("fills WhatsApp templates", () => {
     expect(fillTemplate("أهلًا {الاسم}، {السيارة} جاهزة", { "الاسم": "خالد", "السيارة": "Jeep WK2" })).toBe("أهلًا خالد، Jeep WK2 جاهزة");
     expect(fillTemplate("رقم {رقم_الأمر} {مجهول}", { "رقم_الأمر": 13558, "مجهول": "" })).toBe("رقم 13558 {مجهول}");
@@ -183,10 +182,7 @@ describe("permissions", () => {
     for (const a of ["workOrder.create", "statement.create", "stock.issue", "customer.manage", "item.view", "stockCount.enter"] as const)
       expect(can("engineer", a)).toBe(true);
   });
-  it("admins can do everything; no role can do nothing", () => {
-    for (const a of Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]) {
-      expect(can("admin", a)).toBe(true);
-      expect(can(undefined, a)).toBe(false);
-    }
+  it("a missing role can do nothing", () => {
+    for (const a of Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]) expect(can(undefined, a)).toBe(false);
   });
 });

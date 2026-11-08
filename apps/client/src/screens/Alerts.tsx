@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { BellRing, Check, MessageCircle, Plus } from "lucide-react";
-import { fillTemplate, firstName } from "@jc/core";
+import { fillTemplate, firstName, whatsappLink } from "@jc/core";
 import { Button, Dialog, Field, Input, Money, Panel, Textarea, useFmt } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
 import { api } from "../data/api";
-import { useAction, useApi } from "../data/hooks";
-import { daysIn, Link, useIsAdmin, waLink } from "../lib";
+import { useAction, useApi, useLongStayDays } from "../data/hooks";
+import { daysIn, Link, useIsAdmin } from "../lib";
 import type { WorkOrderRow } from "../data/types";
 import { carName, CarPlate, useWaTemplates } from "./common";
 
@@ -31,8 +31,7 @@ export function Alerts() {
   const feed = useApi<AlertFeed>("/alerts");
   const open = useApi<Reminder[]>("/reminders?status=open");
   const inShop = useApi<WorkOrderRow[]>("/work-orders?status=in_shop");
-  const settings = useApi<Record<string, unknown>>("/settings");
-  const longDays = Number(settings.data?.["workshop.longStayDays"] ?? 3);
+  const longDays = useLongStayDays();
   const [newOpen, setNewOpen] = useState(false);
   const [n, setN] = useState({ dueDate: "", note: "" });
   const done = (r: Reminder) => run(() => api(`/reminders/${r.id}`, { method: "PATCH", body: { done: true } }), "تم.");
@@ -41,7 +40,7 @@ export function Alerts() {
 
   const Row = ({ r }: { r: Reminder }) => {
     const car = r.make ? carName({ make: r.make, model: r.model, variant: null }) : "";
-    const href = r.kind === "service" && tpl ? waLink(r.whatsapp ?? r.mobile ?? "", fillTemplate(tpl.text, { "الاسم": firstName(r.customerName ?? ""), "السيارة": car || "سيارتك", "الموعد": when(r) })) : null;
+    const href = r.kind === "service" && tpl ? whatsappLink(r.whatsapp ?? r.mobile ?? "", fillTemplate(tpl.text, { "الاسم": firstName(r.customerName ?? ""), "السيارة": car || "سيارتك", "الموعد": when(r) })) : null;
     return (
       <tr>
         <td>{r.vehicleId ? <Link to={`/cars/${r.vehicleId}`}><CarPlate v={r} /></Link> : <span className="subtle">مذكرة</span>}</td>
