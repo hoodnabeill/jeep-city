@@ -72,5 +72,11 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>لتصوير السيارة ومسح ملصقات الأصناف</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>للبحث بالصوت عن رقم اللوحة أو اسم العميل</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>للبحث بالصوت عن رقم اللوحة أو اسم العميل</string>
 </dict>
 </plist>

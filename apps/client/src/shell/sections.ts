@@ -2,12 +2,12 @@ import { BarChart3, Bell, CarFront, ClipboardCheck, FileText, History, Handshake
 import { can, type Action, type PermissionHolder, type Section } from "@jc/core";
 
 export type NavItem = { to: string; label: string; icon: LucideIcon; perm?: Action; count?: true };
-export type AppSection = { id: Section; label: string; sub: string; icon: LucideIcon; nav: NavItem[] };
+export type AppSection = { id: Section; label: string; short: string; sub: string; icon: LucideIcon; nav: NavItem[] };
 
 /** The four home tiles. A tile (and each page in it) shows only to users with the page's permission. */
 export const SECTIONS: AppSection[] = [
   {
-    id: "reception", label: "الاستقبال", sub: "السيارات في الورشة، العملاء، البيانات والمذكرات", icon: CarFront,
+    id: "reception", label: "الاستقبال", short: "الاستقبال", sub: "السيارات في الورشة، العملاء، البيانات والمذكرات", icon: CarFront,
     nav: [
       { to: "/board", label: "لوحة الورشة", icon: LayoutDashboard },
       { to: "/reception", label: "الاستقبال", icon: CarFront, count: true },
@@ -17,7 +17,7 @@ export const SECTIONS: AppSection[] = [
     ],
   },
   {
-    id: "inventory", label: "المخزن", sub: "الأصناف والأرصدة، الجرد، الملصقات، الموردين والمشتريات", icon: Package,
+    id: "inventory", label: "المخزن", short: "المخزن", sub: "الأصناف والأرصدة، الجرد، الملصقات، الموردين والمشتريات", icon: Package,
     nav: [
       { to: "/items", label: "الأصناف والأرصدة", icon: Package, perm: "item.view" },
       { to: "/stock-counts", label: "الجرد", icon: ClipboardCheck, perm: "stockCount.enter" },
@@ -26,7 +26,7 @@ export const SECTIONS: AppSection[] = [
     ],
   },
   {
-    id: "accounts", label: "الحسابات والتقارير", sub: "صندوق الكاش والمصروفات والتقارير وأرباح الشركاء", icon: Wallet,
+    id: "accounts", label: "الحسابات والتقارير", short: "الحسابات", sub: "صندوق الكاش والمصروفات والتقارير وأرباح الشركاء", icon: Wallet,
     nav: [
       { to: "/cash", label: "صندوق الكاش", icon: Wallet, perm: "cash.manage" },
       { to: "/reports", label: "التقارير", icon: BarChart3, perm: "report.view" },
@@ -34,7 +34,7 @@ export const SECTIONS: AppSection[] = [
     ],
   },
   {
-    id: "users", label: "المستخدمين", sub: "الحسابات والصلاحيات والفنيين وسجل العمليات", icon: UserRoundCog,
+    id: "users", label: "المستخدمين", short: "المستخدمين", sub: "الحسابات والصلاحيات والفنيين وسجل العمليات", icon: UserRoundCog,
     nav: [
       { to: "/users", label: "المستخدمين والصلاحيات", icon: UserRoundCog, perm: "settings.manage" },
       { to: "/activity", label: "سجل العمليات", icon: History, perm: "audit.view" },
@@ -51,4 +51,8 @@ export function activeNav(path: string): string {
   if (path.startsWith("/cars")) return "/customers";
   return SECTIONS.flatMap((s) => s.nav).find((n) => path.startsWith(n.to))?.to ?? "";
 }
+/** A page reached from the menu (no back arrow on the phone), as opposed to a detail page under it. */
+export const isNavRoot = (path: string) => path === "/" || SECTIONS.some((s) => s.nav.some((n) => n.to === path));
+export const navLabel = (path: string) => SECTIONS.flatMap((s) => s.nav).find((n) => n.to === activeNav(path))?.label;
+
 export const sectionOf = (path: string) => SECTIONS.find((s) => s.nav.some((n) => n.to === activeNav(path)));

@@ -58,6 +58,35 @@ export function plateMatches(query: string, p: Plate): boolean {
   return letters.includes(qLetters) && p.digits.includes(q.digits);
 }
 
+/** Spoken Arabic letter names (Egyptian and standard) → the letter, for saying a plate out loud. */
+const LETTER_NAMES: Record<string, string> = {
+  "الف": "ا", "ألف": "ا", "اليف": "ا", "باء": "ب", "با": "ب", "بيه": "ب", "بي": "ب", "تاء": "ت", "تا": "ت", "تيه": "ت", "ثاء": "ث", "ثا": "ث",
+  "جيم": "ج", "حاء": "ح", "حا": "ح", "خاء": "خ", "خا": "خ", "دال": "د", "ذال": "ذ", "راء": "ر", "را": "ر", "زاي": "ز", "زين": "ز",
+  "سين": "س", "شين": "ش", "صاد": "ص", "ضاد": "ض", "طاء": "ط", "طا": "ط", "ظاء": "ظ", "ظا": "ظ", "عين": "ع", "غين": "غ",
+  "فاء": "ف", "فا": "ف", "قاف": "ق", "كاف": "ك", "لام": "ل", "ميم": "م", "نون": "ن", "هاء": "ه", "ها": "ه", "واو": "و", "ياء": "ي", "يا": "ي",
+};
+/** Digits said one by one ("واحد اتنين تلاتة"). Recognisers usually write numbers as digits already. */
+const DIGIT_WORDS: Record<string, string> = {
+  "صفر": "0", "واحد": "1", "اتنين": "2", "اثنين": "2", "إتنين": "2", "تلاتة": "3", "تلاته": "3", "ثلاثة": "3", "ثلاثه": "3",
+  "اربعة": "4", "أربعة": "4", "اربعه": "4", "خمسة": "5", "خمسه": "5", "ستة": "6", "سته": "6", "سبعة": "7", "سبعه": "7",
+  "تمانية": "8", "تمانيه": "8", "ثمانية": "8", "ثمانيه": "8", "تسعة": "9", "تسعه": "9",
+};
+
+/**
+ * Turn what the voice recogniser heard into a search: plate letters said by name become letters and digits said as
+ * words become digits, but only when the phrase looks like a plate (two letter names, or a letter name and a number).
+ * Anything else (a customer name) is searched as heard.
+ */
+export function spokenToSearch(heard: string): string {
+  const words = westernDigits(heard).replace(/[،,.؟?!]/g, " ").split(/\s+/).filter(Boolean).map((w) => w.replace(/^و(?=\S{3,})/, (m, i, s) => (LETTER_NAMES[s.slice(1)] || DIGIT_WORDS[s.slice(1)] ? "" : m)));
+  const letterCount = words.filter((w) => LETTER_NAMES[w]).length;
+  const hasNumber = words.some((w) => /\d/.test(w) || DIGIT_WORDS[w]);
+  if (letterCount < 2 && !(letterCount >= 1 && hasNumber)) return words.join(" ");
+  const letters = words.filter((w) => LETTER_NAMES[w] || (w.length === 1 && /[ء-ي]/.test(w))).map((w) => LETTER_NAMES[w] ?? w);
+  const digits = words.map((w) => (DIGIT_WORDS[w] ?? w.replace(/\D/g, ""))).join("");
+  return [letters.join(" "), digits].filter(Boolean).join(" ");
+}
+
 /**
  * How well a car matches a quick search; lower is better. Used to order results so the car the user meant comes first:
  * the exact plate, then the same plate number with any letters, the chassis, plates starting with the number,

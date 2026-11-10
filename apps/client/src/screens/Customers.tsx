@@ -9,6 +9,7 @@ import { qs, useAction, useApi } from "../data/hooks";
 import type { Customer, History, LedgerRow, PaymentMethod } from "../data/types";
 import { carName, CarPlate, EMPTY_PLATE, plateError, PlateInput, StatusBadge, WhatsAppButton } from "./common";
 import { usePlateTypes } from "../data/plates";
+import { SearchTools } from "./SearchTools";
 
 export function Customers() {
   const f = useFmt();
@@ -27,7 +28,7 @@ export function Customers() {
       <PageHead title="العملاء والسيارات" sub={total > rows.length ? <>آخر {f.n(rows.length)} عميل زاروا الورشة من {f.n(total)} · ابحث بالاسم أو الموبايل أو اللوحة أو الشاسيه</> : <>{f.n(total)} عميل</>}
         actions={<Button variant="primary" icon={<UserPlus />} onClick={() => setNewOpen(true)}>عميل جديد</Button>} />
       <div className="toolbar">
-        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="الاسم، الموبايل، اللوحة أو الشاسيه" aria-label="بحث في العملاء" /></div>
+        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="الاسم، الموبايل، اللوحة أو الشاسيه" aria-label="بحث في العملاء" /><span className="input-group__end"><SearchTools onText={setQ} /></span></div>
         {seeBalance && <Chip pressed={debt} onToggle={() => setDebt(!debt)}>عليهم مديونية</Chip>}
       </div>
       <PageState loading={list.loading && !list.data} error={list.error} onRetry={list.reload} />

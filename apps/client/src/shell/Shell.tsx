@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  ArrowRight, Bell, LayoutGrid, ChevronDown, CloudOff, FileText, LogOut, Package, RefreshCw,
+  ArrowRight, Bell, LayoutGrid, Mic, ChevronDown, CloudOff, FileText, LogOut, Package, RefreshCw,
   Search, Settings, Truck, Users, UserRoundCog, Wifi, Plus, Wrench, Receipt,
 } from "lucide-react";
 import { Avatar, GRADE_LABEL, Kbd, useDigits, useFmt } from "@jc/ui";
@@ -12,7 +12,20 @@ import type { Customer, Item, LookupHit, StatementRow, Supplier, WorkOrderRow } 
 import { CarPlate } from "../screens/common";
 import { daysIn, go, Link, useHotkey, useCan, useSession } from "../lib";
 import { can } from "@jc/core";
-import { activeNav, sectionOf, visibleNav, visibleSections, type NavItem } from "./sections";
+import { activeNav, isNavRoot, navLabel, sectionOf, visibleNav, visibleSections, type NavItem } from "./sections";
+import { SearchTools } from "../screens/SearchTools";
+import { canListen } from "../device";
+
+/** Phone tables become cards: each cell carries its column name, shown as a small label (app.css). */
+function labelCells(root: HTMLElement) {
+  root.querySelectorAll("table").forEach((t) => {
+    const heads = [...t.querySelectorAll("thead th")].map((th) => th.textContent?.trim() ?? "");
+    if (!heads.length) return;
+    t.querySelectorAll("tbody tr, tfoot tr").forEach((tr) => [...tr.children].forEach((td, i) => {
+      if (heads[i] && td.getAttribute("data-label") !== heads[i]) td.setAttribute("data-label", heads[i]);
+    }));
+  });
+}
 
 export function Shell({ path, children }: { path: string; children: ReactNode }) {
   const { user } = useSession();
@@ -21,7 +34,19 @@ export function Shell({ path, children }: { path: string; children: ReactNode })
   const savedDigits = useSetting<string | null>("display.digits", null);
   useEffect(() => { if (savedDigits === "latn" || savedDigits === "arab") setDigits(savedDigits); }, [savedDigits, setDigits]);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   useHotkey("k", () => setPaletteOpen(true));
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    let frame = 0;
+    const run = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => labelCells(el)); };
+    run();
+    const mo = new MutationObserver(run);
+    mo.observe(el, { childList: true, subtree: true });
+    return () => { mo.disconnect(); cancelAnimationFrame(frame); };
+  }, []);
   const inShop = useApi<WorkOrderRow[]>("/work-orders?status=in_shop");
   const current = path === "/" ? "/" : activeNav(path);
   const section = sectionOf(path);
@@ -54,15 +79,29 @@ export function Shell({ path, children }: { path: string; children: ReactNode })
         </ul>
       </nav>
       <div className="main">
-        <TopBar onSearch={() => setPaletteOpen(true)} inShop={inShop.data ?? []} />
-        <main className="page" id="main">{children}</main>
+        <TopBar path={path} onSearch={() => setPaletteOpen(true)} onVoice={() => { setVoiceOpen(true); setPaletteOpen(true); }} inShop={inShop.data ?? []} />
+        {section && isNavRoot(path) && visibleNav(section, user).length > 1 && (
+          <nav className="subtabs" aria-label={`صفحات ${section.label}`}>
+            {visibleNav(section, user).map((n) => <Link key={n.to} to={n.to} aria-current={current === n.to ? "page" : undefined}>{n.label}</Link>)}
+          </nav>
+        )}
+        <main className="page" id="main" ref={mainRef}>{children}</main>
       </div>
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      {/* Phones: the four sections (same as the home tiles), with labels, at the bottom within thumb reach. */}
+      <nav className="tabbar" aria-label="الأقسام">
+        {[{ id: "home", to: "/", label: "الرئيسية", icon: LayoutGrid, on: path === "/" }, ...sections.map((s) => ({ id: s.id, to: visibleNav(s, user)[0].to, label: s.short, icon: s.icon, on: s.id === section?.id }))].map((t) => (
+          <Link key={t.id} to={t.to} className="tabbar__item" aria-current={t.on ? "page" : undefined}>
+            <span className="tabbar__icon"><t.icon aria-hidden />{t.id === "reception" && !!inShop.data?.length && <span className="tabbar__count num">{inShop.data.length}</span>}</span>
+            <span className="tabbar__label">{t.label}</span>
+          </Link>
+        ))}
+      </nav>
+      <CommandPalette open={paletteOpen} listening={voiceOpen} onClose={() => { setPaletteOpen(false); setVoiceOpen(false); }} />
     </div>
   );
 }
 
-function TopBar({ onSearch, inShop }: { onSearch: () => void; inShop: WorkOrderRow[] }) {
+function TopBar({ path, onSearch, onVoice, inShop }: { path: string; onSearch: () => void; onVoice: () => void; inShop: WorkOrderRow[] }) {
   const { user, sync, signOut } = useSession();
   const f = useFmt();
   const [menu, setMenu] = useState<"" | "alerts" | "user" | "sync">("");
@@ -87,11 +126,15 @@ function TopBar({ onSearch, inShop }: { onSearch: () => void; inShop: WorkOrderR
   const alertCount = lowList.length + longStay.length + dueList.length + debtList.length;
   return (
     <header className="topbar" ref={ref}>
-      <button type="button" className="search-trigger" onClick={onSearch}>
+      {/* Phone app bar: back on detail pages, and where you are. */}
+      {!isNavRoot(path) && <button type="button" className="icon-btn appbar__back" aria-label="رجوع" onClick={() => (history.length > 1 ? history.back() : go(activeNav(path) || "/"))}><ArrowRight /></button>}
+      <span className="appbar__title">{path === "/" ? "Jeep City" : navLabel(path) ?? ""}</span>
+      <button type="button" className="search-trigger" onClick={onSearch} aria-label="بحث">
         <Search aria-hidden />
         <span>ابحث برقم اللوحة، الشاسيه، العميل، الصنف أو رقم البيان</span>
         <Kbd>Ctrl K</Kbd>
       </button>
+      {canListen() && <button type="button" className="icon-btn topbar__mic" aria-label="بحث بالصوت: قول رقم اللوحة أو اسم العميل" title="بحث بالصوت" onClick={onVoice}><Mic /></button>}
       <div className="topbar__end">
         <div className="pop-anchor">
           <button type="button" className={`sync ${q.failed.length ? "is-offline" : syncView.cls}`} aria-expanded={menu === "sync"} onClick={() => setMenu(menu === "sync" ? "" : "sync")}>
@@ -164,6 +207,7 @@ function TopBar({ onSearch, inShop }: { onSearch: () => void; inShop: WorkOrderR
           </button>
           {menu === "user" && (
             <div className="pop pop--user">
+              {can(user, "settings.manage") && <button type="button" className="pop__item phone-only" onClick={() => { setMenu(""); go("/settings"); }}><Settings />الإعدادات</button>}
               <button type="button" className="pop__item" onClick={() => { setMenu(""); go("/login?switch=1"); }}><UserRoundCog />تبديل المستخدم</button>
               <button type="button" className="pop__item" onClick={() => { setMenu(""); signOut().then(() => go("/")); }}><LogOut />تسجيل الخروج</button>
             </div>
@@ -176,7 +220,7 @@ function TopBar({ onSearch, inShop }: { onSearch: () => void; inShop: WorkOrderR
 
 /* ---------- Ctrl+K global search (server-side, Arabic-variant tolerant) ---------- */
 type Hit = { key: string; group: string; title: ReactNode; sub?: ReactNode; to: string; lead?: ReactNode };
-function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+function CommandPalette({ open, onClose, listening }: { open: boolean; onClose: () => void; listening: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -233,6 +277,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   return (
     <dialog ref={ref} className="palette" onClose={onClose} onClick={(e) => { if (e.target === ref.current) onClose(); }} aria-label="بحث شامل">
       <div className="palette__input">
+        <button type="button" className="icon-btn palette__close" aria-label="إغلاق البحث" onClick={onClose}><ArrowRight /></button>
         <Search aria-hidden />
         <input autoFocus value={q} placeholder="لوحة، شاسيه، اسم عميل، موبايل، صنف، باركود، رقم بيان أو أمر شغل"
           onChange={(e) => setQ(e.target.value)}
@@ -241,6 +286,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
             if (e.key === "ArrowUp") { e.preventDefault(); setSel((s) => Math.max(s - 1, 0)); }
             if (e.key === "Enter") pick(shown[sel]);
           }} />
+        {open && <SearchTools onText={(t) => { setQ(t); setSel(0); }} autoListen={listening} />}
         <Kbd>Esc</Kbd>
       </div>
       <div className="palette__results">

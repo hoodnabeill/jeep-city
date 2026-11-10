@@ -8,6 +8,7 @@ import { api } from "../data/api";
 import { qs, useAction, useApi, useSetting } from "../data/hooks";
 import type { CatalogHit, Customer, PaymentMethod } from "../data/types";
 import { NO_VAT, totalsOf, type Vat } from "./lines";
+import { SearchTools } from "./SearchTools";
 
 /** بيع مباشر: parts or oil sold over the counter, no car or work order. */
 export function DirectSale() {
@@ -73,7 +74,7 @@ export function DirectSale() {
             <div className="add-line">
               <div className="grow">
                 <div className="input-group"><Plus /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="اسم الصنف، الكود أو امسح الباركود" aria-label="إضافة صنف"
-                  onKeyDown={(e) => { if (e.key === "Enter" && hits[0]) { setLines([...lines, { hit: hits[0], qty: "1" }]); setQ(""); } }} /></div>
+                  onKeyDown={(e) => { if (e.key === "Enter" && hits[0]) { setLines([...lines, { hit: hits[0], qty: "1" }]); setQ(""); } }} /><span className="input-group__end"><SearchTools onText={setQ} voice={false} /></span></div>
                 {hits.length > 0 && (
                   <div className="picker" role="listbox">
                     {hits.map((h) => (

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  amountInWords, can, lookupRank, roleDefaults, computeTotals, divRound, egp, egyptMobile, lineValuePt, numberToArabicWords,
+  amountInWords, can, lookupRank, roleDefaults, spokenToSearch, computeTotals, divRound, egp, egyptMobile, lineValuePt, numberToArabicWords,
   fillTemplate, firstName, toMilli, toPt, normalizePlate, parsePlate, PERMISSIONS, plateKey, plateMatches, unusualPlateLetters, qty, searchKey, uuidv7, whatsappLink, type TotalsLine,
 } from "./index";
 
@@ -203,5 +203,19 @@ describe("quick search ranking", () => {
     expect(longer).toBeLessThan(inside);
     expect(lookupRank("123 صطب", { plateLetters: "ص ط ب", plateDigits: "123" })).toBe(0);
     expect(lookupRank("123 صطب", { plateLetters: "ن ج", plateDigits: "123" })).toBeGreaterThan(0);
+  });
+});
+
+describe("voice search", () => {
+  it("turns a plate said out loud into letters and digits", () => {
+    expect(spokenToSearch("صاد طاء باء 123")).toBe("ص ط ب 123");
+    expect(spokenToSearch("123 صاد وطاء وباء")).toBe("ص ط ب 123");
+    expect(spokenToSearch("نون جيم واحد اتنين تلاتة")).toBe("ن ج 123");
+    expect(spokenToSearch("ص ط ب ١٢٣")).toBe("ص ط ب 123");
+  });
+  it("leaves names and phone numbers as heard", () => {
+    expect(spokenToSearch("محمد عاطف اسماعيل")).toBe("محمد عاطف اسماعيل");
+    expect(spokenToSearch("01001234567")).toBe("01001234567");
+    expect(spokenToSearch("يا محمد")).toBe("يا محمد");
   });
 });

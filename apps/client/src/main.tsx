@@ -5,6 +5,9 @@ import "./app.css";
 import "./print/print.css";
 import { App } from "./App";
 import { SessionProvider } from "./lib";
+import { setUpNativeShell } from "./native";
+
+setUpNativeShell();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

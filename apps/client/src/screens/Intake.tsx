@@ -12,6 +12,7 @@ import type { History, LookupHit, Technician, User, Vehicle } from "../data/type
 import { CarDiagram, MARK_KIND, type Mark } from "./CarDiagram";
 import { carName, CarPlate, EMPTY_PLATE, plateError, PlateInput, SignaturePad } from "./common";
 import { usePlateTypes } from "../data/plates";
+import { SearchTools } from "./SearchTools";
 
 const BELONGINGS = ["موبايل", "عدة", "إريال راديو", "استبن", "ولاعة سجاير"];
 type Picked = { vehicle: Vehicle; customer: LookupHit["customer"] };
@@ -127,6 +128,7 @@ export function Intake() {
                 <Search />
                 <Input size="lg" value={q} onChange={(e) => setQ(e.target.value)} autoFocus
                   placeholder="رقم اللوحة، الشاسيه، اسم العميل أو الموبايل… أو امسح الكود" aria-label="بحث عن السيارة" />
+                <span className="input-group__end"><SearchTools onText={setQ} /></span>
               </div>
               {q.trim().length >= 2 && (
                 <div className="stack" style={{ gap: 8 }}>

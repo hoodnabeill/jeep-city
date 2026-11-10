@@ -255,6 +255,14 @@ export const workOrderTechnicians = pgTable("work_order_technicians", {
   technicianId: uuid("technician_id").notNull().references(() => technicians.id),
 }, (t) => [primaryKey({ columns: [t.workOrderId, t.technicianId] })]);
 
+/** Photos of the car taken on the phone (intake, damage, parts). The image is a file; this links it to the work order. */
+export const workOrderPhotos = pgTable("work_order_photos", {
+  ...base(),
+  workOrderId: uuid("work_order_id").notNull().references(() => workOrders.id),
+  fileId: uuid("file_id").notNull().references(() => files.id),
+  note: text("note"),
+}, (t) => [index("wo_photos_wo_ix").on(t.workOrderId)]);
+
 export const intakeMarks = pgTable("intake_marks", {
   ...base(),
   workOrderId: uuid("work_order_id").notNull().references(() => workOrders.id),

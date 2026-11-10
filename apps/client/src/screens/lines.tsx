@@ -5,6 +5,7 @@ import { computeTotals, toMilli, type Category, type Discount } from "@jc/core";
 import { api } from "../data/api";
 import { qs } from "../data/hooks";
 import type { CatalogHit, Line, Technician } from "../data/types";
+import { SearchTools } from "./SearchTools";
 
 /** Totals with the real formulas (packages/core/src/totals.ts). */
 export type Vat = { enabled: boolean; rateBp: Partial<Record<Category, number>> };
@@ -137,7 +138,7 @@ function ItemPicker({ kind, onPick, issueMode }: { kind: "labor" | "parts"; onPi
               if (e.key === "Enter") { e.preventDefault(); add(opts[sel]); }
               if (e.key === "Escape") setQ("");
             }} />
-          <span className="input-group__end"><Kbd>Enter</Kbd></span>
+          <span className="input-group__end">{kind === "parts" && <SearchTools onText={setQ} voice={false} />}<Kbd>Enter</Kbd></span>
         </div>
         {opts.length > 0 && (
           <div className="picker" role="listbox">

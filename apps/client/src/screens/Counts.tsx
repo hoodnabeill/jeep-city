@@ -7,6 +7,7 @@ import { go, Link, useCan } from "../lib";
 import { api } from "../data/api";
 import { qs, useAction, useApi } from "../data/hooks";
 import type { Grade, Item } from "../data/types";
+import { SearchTools } from "./SearchTools";
 
 type CountRow = { id: string; status: "open" | "approved" | "cancelled"; note: string | null; createdAt: string; approvedAt: string | null; by: string | null; lines: number };
 type Line = { variantId: string; itemId: string; code: string; name: string; unit: string; location: string | null; grade: Grade | null; systemQtyMilli: number; countedQtyMilli: number; diffMilli: number; diffValuePt?: number };
@@ -96,7 +97,13 @@ export function StockCountDetail({ id }: { id: string }) {
               if (r) setLast(r.variantId);
               scanRef.current?.focus();
             }}>
-              <Input ref={scanRef} value={scan} onChange={(e) => setScan(e.target.value)} placeholder="امسح الباركود أو اكتب كود الصنف واضغط Enter" aria-label="مسح الباركود" className="lat" autoFocus />
+              <div className="input-group">
+                <Input ref={scanRef} value={scan} onChange={(e) => setScan(e.target.value)} placeholder="امسح الباركود أو اكتب كود الصنف واضغط Enter" aria-label="مسح الباركود" className="lat" autoFocus />
+                <span className="input-group__end"><SearchTools voice={false} onText={async (code) => {
+                  const r = await run(() => api<{ variantId: string }>(`/stock-counts/${id}/scan`, { method: "POST", body: { code } }));
+                  if (r) setLast(r.variantId);
+                }} /></span>
+              </div>
             </form>
           </Panel>
           <Panel title="أو دوّر واكتب العدد" icon={<Search />}>

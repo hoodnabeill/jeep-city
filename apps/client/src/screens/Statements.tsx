@@ -6,6 +6,7 @@ import { go } from "../lib";
 import { qs, useApi } from "../data/hooks";
 import type { PaymentMethod, StatementRow } from "../data/types";
 import { CarPlate } from "./common";
+import { SearchTools } from "./SearchTools";
 
 export function Statements() {
   const f = useFmt();
@@ -26,7 +27,7 @@ export function Statements() {
         : <>{f.n(rows.length)} بيانات · الإجمالي <Money pt={total} /></>}
         actions={<Button variant="primary" icon={<Plus />} onClick={() => go("/reception")}>بيان من أمر شغل</Button>} />
       <div className="toolbar">
-        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="رقم البيان، العميل أو اللوحة" aria-label="بحث في البيانات" /></div>
+        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="رقم البيان، العميل أو اللوحة" aria-label="بحث في البيانات" /><span className="input-group__end"><SearchTools onText={setQ} /></span></div>
         <Segmented label="حالة الدفع" value={st} onChange={setSt} options={[{ value: "all", label: "الكل" }, { value: "paid", label: "مدفوع" }, { value: "credit", label: "آجل / متبقي" }, { value: "cancelled", label: "ملغي" }]} />
       </div>
       <PageState loading={list.loading && !list.data} error={list.error} onRetry={list.reload} />

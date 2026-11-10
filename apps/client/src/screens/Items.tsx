@@ -10,6 +10,7 @@ import { qs, useAction, useApi } from "../data/hooks";
 import type { Grade, Item, Movement, Variant } from "../data/types";
 import { QrLabel, useLabelSize } from "./Labels";
 import { toPt, toMilli } from "@jc/core";
+import { SearchTools } from "./SearchTools";
 
 type ItemType = Item["type"];
 const TYPE_LABEL: Record<ItemType, string> = { part: "قطع غيار", oil: "زيوت", material: "خامات", labor: "مصنعيات", paint: "بويات" };
@@ -36,7 +37,7 @@ export function Items() {
       <PageHead title="المخزن والأصناف" sub={<>{f.n(rows.length)} صنف في هذه القائمة · مخزن رئيسي واحد</>}
         actions={<><Button icon={<QrCode />} onClick={() => go("/labels")}>ملصقات QR</Button>{canManage && <Button variant="primary" icon={<Plus />} onClick={() => setNewOpen(true)}>صنف جديد</Button>}</>} />
       <div className="toolbar">
-        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && rows.length === 1) go(`/items/${rows[0].id}`); }} placeholder="اسم الصنف، الكود، الاسم الإنجليزي أو امسح الباركود" aria-label="بحث في الأصناف" /></div>
+        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && rows.length === 1) go(`/items/${rows[0].id}`); }} placeholder="اسم الصنف، الكود، الاسم الإنجليزي أو امسح الباركود" aria-label="بحث في الأصناف" /><span className="input-group__end"><SearchTools onText={setQ} voice={false} /></span></div>
         <Segmented label="نوع الصنف" value={type} onChange={setType} options={[{ value: "all", label: "الكل" }, ...(["part", "oil", "material", "labor"] as const).map((t) => ({ value: t, label: TYPE_LABEL[t] }))]} />
         <Select value={shelf} onChange={(e) => setShelf(e.target.value)} aria-label="مكان التخزين" style={{ width: 170 }}>
           <option value="">كل الأماكن</option>

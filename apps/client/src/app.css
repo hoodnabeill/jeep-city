@@ -366,14 +366,7 @@ a.strip__cell:hover { background: var(--surface-hover); }
 }
 @media (max-width: 760px) {
   .app { grid-template-columns: minmax(0, 1fr); }
-  .rail__sections, .rail__title { display: none; }
-  .rail { position: fixed; inset: auto 0 0 0; width: 100%; height: 64px; flex-direction: row; z-index: 40; overflow: hidden; }
-  .rail__logo, .rail__foot { display: none; }
-  .rail__nav { display: flex; padding: 6px; gap: 2px; overflow-x: auto; flex: 1; min-width: 0; }
-  .rail__item { width: 52px; height: 52px; }
-  .topbar { padding: 0 16px; }
-  .search-trigger span:not(.kbd), .search-trigger .kbd, .user-btn__text, .sync span { display: none; }
-  .page { padding: 20px 16px 96px; }
+  .rail { display: none; }
   .board, .form-grid, .odo, .doc-head, .grid-2 { grid-template-columns: minmax(0, 1fr); }
   .doc-head .dl { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   .doc-head__car { border-inline-end: 0; border-bottom: 1px solid var(--line); }
@@ -430,12 +423,6 @@ a.strip__cell:hover { background: var(--surface-hover); }
 .public__work { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; }
 .public__foot { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 12px; font-size: 14px; }
 
-/* Phones (Capacitor): keep the top bar below the notch and the bottom bar above the home indicator. */
-@media (max-width: 760px) {
-  .topbar { padding-top: env(safe-area-inset-top); height: calc(var(--topbar-h, 64px) + env(safe-area-inset-top)); }
-  .rail { padding-bottom: env(safe-area-inset-bottom); height: calc(64px + env(safe-area-inset-bottom)); }
-  .page { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
-}
 
 /* ---------- Home: one tile per section ---------- */
 .home { max-width: 1100px; margin: 0 auto; padding-block: 24px; }
@@ -465,3 +452,171 @@ a.strip__cell:hover { background: var(--surface-hover); }
 .rail__section:hover { color: var(--rail-text); background: var(--rail-raised); }
 .rail__section[aria-current="true"] { color: var(--jc-yellow); border-color: var(--jc-yellow); }
 .rail__title { padding: 6px 26px 4px; color: var(--rail-muted); font-size: 12px; font-weight: 700; }
+
+/* ==========================================================================
+   Phone (<=760px, also the Android and iOS app): a phone layout, not the desktop squeezed.
+   App bar on top (back + where you are), the four sections as a labelled tab bar at the
+   bottom, the section pages as tabs under the app bar, the one yellow action as a
+   floating button within thumb reach, tables as cards, dialogs as bottom sheets.
+   ========================================================================== */
+.tabbar, .subtabs, .appbar__back, .appbar__title, .phone-only { display: none; }
+:root { --tabbar-h: 64px; --appbar-h: 56px; }
+
+@media (max-width: 760px) {
+  html { -webkit-tap-highlight-color: transparent; }
+  .main { min-width: 0; }
+
+  /* App bar */
+  .topbar {
+    height: calc(var(--appbar-h) + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 8px 0; gap: 4px;
+    background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .appbar__back { display: inline-grid; }
+  .appbar__back svg { width: 22px; height: 22px; }
+  .appbar__title {
+    display: block; flex: 1 1 auto; min-width: 0; padding-inline: 8px; font-size: 1.125rem; font-weight: 800;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .search-trigger { flex: none; width: 44px; height: 44px; padding: 0; justify-content: center; border: 0; background: transparent; color: var(--text); }
+  .search-trigger svg { width: 22px; height: 22px; }
+  .search-trigger span, .search-trigger .kbd, .user-btn__text, .user-btn > svg, .sync span { display: none; }
+  .topbar__end { gap: 0; margin-inline-start: 0; }
+  .topbar__end > a.icon-btn[href*="settings"] { display: none; }
+  .sync { width: 44px; height: 44px; padding: 0; justify-content: center; }
+  .user-btn { padding: 0 6px; height: 44px; }
+  .phone-only { display: flex; }
+  /* Popovers become full-width sheets under the app bar. */
+  .topbar .pop { position: fixed; top: calc(var(--appbar-h) + env(safe-area-inset-top)); inset-inline: 0; min-width: 0; width: auto; max-height: 70dvh; overflow: auto; border-inline: 0; }
+
+  /* Section pages as tabs under the app bar */
+  .subtabs {
+    display: flex; position: sticky; top: calc(var(--appbar-h) + env(safe-area-inset-top)); z-index: 19;
+    overflow-x: auto; scrollbar-width: none; background: var(--surface); border-bottom: 1px solid var(--line); padding-inline: 8px;
+  }
+  .subtabs::-webkit-scrollbar { display: none; }
+  .subtabs a {
+    flex: none; display: flex; align-items: center; height: 46px; padding: 0 14px; color: var(--text-muted); font-weight: 600; font-size: 0.94rem;
+    text-decoration: none; white-space: nowrap; border-bottom: 3px solid transparent;
+  }
+  .subtabs a[aria-current="page"] { color: var(--text); font-weight: 700; border-bottom-color: var(--jc-black); }
+
+  /* Bottom tab bar: the four sections, labelled */
+  .tabbar {
+    display: flex; position: fixed; inset: auto 0 0 0; z-index: 40; height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom); background: var(--jc-black); border-top: 1px solid var(--rail-line);
+  }
+  .tabbar__item {
+    flex: 1 1 0; min-width: 0; display: grid; justify-items: center; align-content: center; gap: 4px;
+    color: var(--rail-muted); text-decoration: none;
+  }
+  .tabbar__icon { position: relative; display: grid; place-items: center; width: 56px; height: 30px; transition: background-color var(--t-fast); }
+  .tabbar__icon svg { width: 22px; height: 22px; stroke-width: 1.9; }
+  .tabbar__label { font-size: 0.72rem; font-weight: 600; line-height: 1.2; max-width: 100%; padding-inline: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tabbar__item[aria-current="page"] { color: var(--surface); }
+  .tabbar__item[aria-current="page"] .tabbar__icon {
+    background: var(--jc-yellow); color: var(--jc-black);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .tabbar__item[aria-current="page"] .tabbar__label { font-weight: 700; }
+  .tabbar__item:focus-visible { outline: 2px solid var(--jc-yellow); outline-offset: -4px; }
+  .tabbar__count {
+    position: absolute; top: -6px; inset-inline-end: -4px; min-width: 20px; height: 18px; padding: 0 5px; display: grid; place-items: center;
+    background: var(--surface); color: var(--jc-black); font-size: 11px; font-weight: 700;
+  }
+
+  /* Page */
+  .page { padding: 16px 16px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 96px); }
+  .page-head { gap: 12px; margin-bottom: 16px; align-items: flex-start; }
+  .page-head h1 { font-size: 1.35rem; }
+  .page-head__back { display: none; }
+  .page-head__actions { display: flex; gap: 8px; overflow-x: auto; max-width: 100%; scrollbar-width: none; padding-bottom: 2px; }
+  .page-head__actions::-webkit-scrollbar { display: none; }
+  .page-head__actions .btn { flex: none; }
+  /* The one yellow action floats above the tab bar, at the thumb end of the screen. */
+  .page-head__actions .btn--primary {
+    position: fixed; z-index: 35; inset-inline-end: 16px; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+    height: 56px; padding: 0 22px; font-size: 1rem; box-shadow: 0 10px 28px -8px rgb(11 11 11 / 0.35), 0 2px 6px rgb(11 11 11 / 0.12);
+  }
+  .page-head__actions .btn--primary .kbd { display: none; }
+
+  /* Touch-sized controls; 16px text so the phone never zooms into a field */
+  .input, .select, textarea { font-size: 16px; min-height: 48px; }
+  .btn { min-height: 44px; }
+  .toolbar { gap: 8px; }
+  .toolbar > * { max-width: 100%; }
+  .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+
+  /* Tables become cards: first cell is the title, the rest are labelled pairs (labels come from the header, Shell.tsx). */
+  .table-wrap { overflow: visible; }
+  .table { display: block; min-width: 0 !important; width: 100%; }
+  .table thead { display: none; }
+  .table tbody, .table tfoot { display: block; }
+  .table tr {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; padding: 14px 16px; height: auto;
+    border-bottom: 1px solid var(--line);
+  }
+  .table td { display: block; padding: 0; border: 0; height: auto; min-height: 0; text-align: start; white-space: normal; min-width: 0; }
+  .table td:empty { display: none; }
+  .table td:first-child { grid-column: 1 / -1; font-size: 1rem; }
+  .table td[data-label]:not(:first-child)::before {
+    content: attr(data-label); display: block; margin-bottom: 2px; color: var(--text-muted); font: 600 0.74rem/1.3 var(--font-ar, inherit);
+  }
+  .table td.num { text-align: start; }
+  .table tfoot tr { background: var(--surface-raised); }
+  .table--compact tr { padding: 10px 16px; }
+
+  /* Dialogs are bottom sheets */
+  .dialog, .dialog--wide {
+    width: 100%; max-width: 100%; max-height: 92dvh; margin: auto 0 0; border-inline: 0; border-bottom: 0;
+    flex-direction: column;
+  }
+  .dialog[open] { display: flex; animation: sheet-in 260ms var(--ease-out); }
+  .dialog__head { padding: 14px 16px; }
+  .dialog__body { padding: 16px; flex: 1 1 auto; }
+  .dialog__foot { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .dialog__foot .btn { flex: 1 1 0; }
+
+  /* Toasts sit above the tab bar, full width, so they never cover navigation */
+  .toasts { inset-inline: 12px; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px); }
+  .toast { width: 100%; }
+
+  /* Cards: no cell fills; the whole card highlights instead */
+  .table tbody tr td, .table tbody tr:hover td, .table tfoot td { background: transparent; height: auto; }
+  .table tbody tr.is-clickable:active { background: var(--surface-hover); }
+  .table tbody tr.is-selected { background: var(--jc-yellow-tint); }
+
+  /* A disabled main action stays readable instead of a faded ghost over the content */
+  .page-head__actions .btn--primary[disabled] { opacity: 1; background: var(--surface-sunken); color: var(--text-subtle); box-shadow: none; }
+
+  /* Search is a full screen on the phone */
+  .palette { margin: 0; width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; padding-top: env(safe-area-inset-top); box-shadow: none; }
+  .palette__input { padding: 0 8px; height: var(--appbar-h); gap: 4px; }
+  .palette__input > .kbd, .palette__foot { display: none; }
+  .palette .palette__close { display: inline-grid; }
+  .palette__results { flex: 1 1 auto; }
+}
+.palette__close { display: none; }
+@keyframes sheet-in { from { transform: translateY(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dialog[open] { animation: none; } }
+
+/* ---------- Mic and camera beside search boxes ---------- */
+.search-tools { display: inline-flex; align-items: center; gap: 2px; }
+.search-tools .icon-btn { width: 40px; height: 40px; }
+.search-tools .icon-btn.is-listening { background: var(--jc-black); color: var(--jc-yellow); animation: listen-pulse 1.2s var(--ease-out) infinite; }
+@keyframes listen-pulse { 0% { box-shadow: 0 0 0 0 rgb(245 197 24 / 0.55); } 100% { box-shadow: 0 0 0 10px rgb(245 197 24 / 0); } }
+@media (prefers-reduced-motion: reduce) { .search-tools .icon-btn.is-listening { animation: none; } }
+.input-group:has(.search-tools) > .input { padding-inline-end: 96px; }
+.palette__input .search-tools { flex: none; }
+.topbar__mic { flex: none; }
+
+/* ---------- Car photos (work order) ---------- */
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.photo-thumb { position: relative; aspect-ratio: 4 / 3; padding: 0; border: 1px solid var(--line); background: var(--surface-sunken); overflow: hidden; display: grid; place-items: center; color: var(--text-subtle); }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb:focus-visible { outline: 2px solid var(--jc-black); outline-offset: 2px; }
+.photo-thumb__meta { position: absolute; inset: auto 0 0 0; padding: 2px 6px; background: rgb(11 11 11 / 0.6); color: #fff; font-size: 11px; text-align: start; }
+.photo-thumb__wait { width: 100%; height: 100%; background: linear-gradient(90deg, var(--surface-sunken), var(--surface-raised), var(--surface-sunken)); background-size: 200% 100%; animation: photo-wait 1.2s linear infinite; }
+@keyframes photo-wait { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .photo-thumb__wait { animation: none; } }
+.photo-full { width: 100%; height: auto; display: block; }
+@media (max-width: 760px) { .photo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } }

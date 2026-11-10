@@ -10,6 +10,7 @@ import { useAction, useApi } from "../data/hooks";
 import type { CatalogHit, Line, Package, Technician, User, WorkOrder, WOStatus } from "../data/types";
 import { LinesTable, totalsOf } from "./lines";
 import { CarDiagram, MARK_KIND, toDiagramMarks } from "./CarDiagram";
+import { CarPhotos } from "./CarPhotos";
 import { carName, CarPlate, SignaturePad, useWaTemplates, WhatsAppButton, WO_TYPE } from "./common";
 import { fillTemplate, firstName, toPt, whatsappLink } from "@jc/core";
 
@@ -130,6 +131,7 @@ export function WorkOrderScreen({ id }: { id: string }) {
 
           {tab === "intake" && (
             <div className="stack">
+              <CarPhotos workOrderId={wo.id} canAdd={editable} />
               <Panel title="حالة الجسم عند الاستلام" sub={`${f.n(wo.marks.length)} علامات`}>
                 <div className="stack" style={{ gap: 16 }}>
                   <CarDiagram marks={toDiagramMarks(wo.marks)} readOnly />
