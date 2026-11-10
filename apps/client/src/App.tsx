@@ -6,6 +6,7 @@ import { Login } from "./screens/Login";
 import { Dashboard } from "./screens/Dashboard";
 import { Home } from "./screens/Home";
 import { PartnersScreen } from "./screens/Partners";
+import { ActivityLog } from "./screens/ActivityLog";
 import { StockCountDetail, StockCounts } from "./screens/Counts";
 import { Reception } from "./screens/Reception";
 import { Intake } from "./screens/Intake";
@@ -31,6 +32,7 @@ const routes: Route[] = [
   { path: "/", render: () => <Home /> },
   { path: "/board", render: () => <Dashboard /> },
   { path: "/users", render: () => <UsersScreen />, perm: "settings.manage" },
+  { path: "/activity", render: () => <ActivityLog />, perm: "audit.view" },
   { path: "/reception", render: () => <Reception /> },
   { path: "/intake", render: () => <Intake /> },
   { path: "/direct-sale", render: () => <DirectSale /> },

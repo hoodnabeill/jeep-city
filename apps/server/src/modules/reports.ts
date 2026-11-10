@@ -154,23 +154,50 @@ export const REPORTS: Record<string, { title: string; ranged: boolean; run: (db:
     },
   },
   people: {
-    title: "شغل المهندسين والفنيين والمكافآت", ranged: true,
+    title: "أداء المهندسين والفنيين", ranged: true,
+    /**
+     * Per person, for the cars they were on (engineer = reception engineer; technician = assigned on the work order):
+     * cars received in the period, comebacks, cars delivered (final statement in the period), labor and parts of those
+     * statements, average days in the shop, and bonuses. A car with two technicians counts for each of them.
+     */
     async run(db, from, to) {
+      const assigned = (pid: SQL) => sql`join assignments a on a.wid = x.wid and a.pid = ${pid}`;
       const rs = await rows(db, sql`
-        select t.name, 'فني' as role, count(distinct s.id)::int as orders, coalesce(sum(l.qty_milli * l.unit_price_pt / 1000), 0) as labor,
-          (select coalesce(sum(b.amount_pt), 0) from bonuses b where b.technician_id = t.id and ${day(sql`b.given_at`)} between ${from}::date and ${to}::date) as bonuses
-        from technicians t left join doc_lines l on l.technician_id = t.id and l.category = 'labor' and l.archived_at is null
-          left join statements s on s.id = l.statement_id and ${finalIn(from, to)}
-        group by t.id having count(distinct s.id) > 0 or exists (select 1 from bonuses b where b.technician_id = t.id and ${day(sql`b.given_at`)} between ${from}::date and ${to}::date)
-        union all
-        select u.display_name, 'مهندس', count(distinct s.id)::int, coalesce(sum((s.totals->'net'->>'labor')::bigint), 0),
-          (select coalesce(sum(b.amount_pt), 0) from bonuses b where b.user_id = u.id and ${day(sql`b.given_at`)} between ${from}::date and ${to}::date)
-        from users u join work_orders w on w.reception_user_id = u.id join statements s on s.work_order_id = w.id and ${finalIn(from, to)}
-        group by u.id
-        order by 4 desc`);
-      return { rows: rs, totals: sum(rs, ["labor", "bonuses"]), columns: [
-        { key: "name", label: "الاسم", type: "text" }, { key: "role", label: "الصفة", type: "text" }, { key: "orders", label: "بيانات", type: "int" },
-        { key: "labor", label: "المصنعيات", type: "money" }, { key: "bonuses", label: "المكافآت", type: "money" }] };
+        with received as (
+          select w.id as wid, w.comeback from work_orders w
+          where w.archived_at is null and w.type = 'repair' and ${day(sql`w.entered_at`)} between ${from}::date and ${to}::date
+        ), delivered as (
+          select s.work_order_id as wid, s.totals, extract(epoch from s.created_at - w.entered_at) / 86400 as days
+          from statements s join work_orders w on w.id = s.work_order_id where ${finalIn(from, to)}
+        ), assignments as (
+          select 'u:' || w.reception_user_id::text as pid, w.id as wid from work_orders w where w.reception_user_id is not null
+          union all select 't:' || t.technician_id::text, t.work_order_id from work_order_technicians t
+        ), people as (
+          select 'u:' || u.id::text as pid, u.id as uid, null::uuid as tid, u.display_name as name, case when u.role = 'admin' then 'إدارة' else 'مهندس' end as role from users u
+          union all select 't:' || t.id::text, null, t.id, t.name, 'فني' from technicians t
+        )
+        select * from (
+          select p.name, p.role,
+            (select count(*) from received x ${assigned(sql`p.pid`)})::int as cars,
+            (select count(*) from received x ${assigned(sql`p.pid`)} where x.comeback)::int as comebacks,
+            (select count(*) from delivered x ${assigned(sql`p.pid`)})::int as delivered,
+            (select coalesce(sum((x.totals->'net'->>'labor')::bigint), 0) from delivered x ${assigned(sql`p.pid`)}) as labor,
+            (select coalesce(sum(coalesce((x.totals->'net'->>'part')::bigint, 0) + coalesce((x.totals->'net'->>'oil')::bigint, 0)), 0) from delivered x ${assigned(sql`p.pid`)}) as parts,
+            (select round(avg(x.days)) from delivered x ${assigned(sql`p.pid`)})::int as days,
+            (select coalesce(sum(b.amount_pt), 0) from bonuses b where (b.user_id = p.uid or b.technician_id = p.tid) and ${day(sql`b.given_at`)} between ${from}::date and ${to}::date) as bonuses
+          from people p
+        ) r where r.cars > 0 or r.delivered > 0 or r.bonuses > 0
+        order by r.delivered desc, r.cars desc, r.name`);
+      return {
+        rows: rs, totals: sum(rs, ["labor", "parts", "bonuses"]),
+        note: "العربية اللي عليها أكتر من فني بتتحسب لكل واحد فيهم. المصنعيات وقطع الغيار من بيانات العربيات اللي اتسلمت في الفترة.",
+        columns: [
+          { key: "name", label: "الاسم", type: "text" }, { key: "role", label: "الصفة", type: "text" },
+          { key: "cars", label: "عربيات استلمها", type: "int" }, { key: "delivered", label: "عربيات اتسلمت", type: "int" },
+          { key: "comebacks", label: "رجعت تاني", type: "int" }, { key: "days", label: "متوسط أيام في الورشة", type: "int" },
+          { key: "labor", label: "المصنعيات", type: "money" }, { key: "parts", label: "قطع الغيار والزيوت", type: "money" }, { key: "bonuses", label: "المكافآت", type: "money" },
+        ],
+      };
     },
   },
   cash: {

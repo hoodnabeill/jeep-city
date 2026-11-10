@@ -18,10 +18,19 @@ const DOW = ["الأحد", "الاثنين", "الثلاثاء", "الأربعا
 
 const cairoToday = () => new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Cairo" });
 const shift = (iso: string, days: number) => { const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
+/** The day after the same date n months ago, so "3 months" ends today and covers exactly 3 months. */
+function monthsBack(t: string, n: number) {
+  const d = new Date(`${t}T12:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() - n);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function presetRange(p: string): [string, string] {
   const t = cairoToday();
   if (p === "day") return [t, t];
   if (p === "week") return [shift(t, -6), t];
+  if (p === "3m" || p === "6m" || p === "12m") return [monthsBack(t, Number(p.slice(0, -1))), t];
   if (p === "year") return [`${t.slice(0, 4)}-01-01`, t];
   return [`${t.slice(0, 7)}-01`, t];
 }
@@ -93,7 +102,7 @@ export function Reports() {
           {(list.data ?? []).map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
         </Select>
         {meta?.ranged !== false && <>
-          <Segmented label="الفترة" value={preset} onChange={pick} options={[{ value: "day", label: "اليوم" }, { value: "week", label: "7 أيام" }, { value: "month", label: "الشهر" }, { value: "year", label: "السنة" }, { value: "custom", label: "فترة مخصصة" }]} />
+          <Segmented label="الفترة" value={preset} onChange={pick} options={[{ value: "day", label: "اليوم" }, { value: "week", label: "7 أيام" }, { value: "month", label: "الشهر" }, { value: "3m", label: "3 شهور" }, { value: "6m", label: "6 شهور" }, { value: "12m", label: "12 شهر" }, { value: "year", label: "السنة" }, { value: "custom", label: "فترة مخصصة" }]} />
           {preset === "custom" && <>
             <Input type="date" aria-label="من" value={from} max={to} onChange={(e) => e.target.value && setRange([e.target.value, to])} style={{ width: 160 }} />
             <Input type="date" aria-label="إلى" value={to} min={from} onChange={(e) => e.target.value && setRange([from, e.target.value])} style={{ width: 160 }} />

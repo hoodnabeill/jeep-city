@@ -34,7 +34,7 @@ describe("general report", () => {
     const low = (await call("GET", `/reports/low-stock?${around}`, t.adminToken)).json();
     expect(low.rows.map((x: { name: string }) => x.name)).toContain("فلتر زيت");
     const people = (await call("GET", `/reports/people?${around}`, t.adminToken)).json();
-    expect(people.rows.find((x: { role: string }) => x.role === "مهندس")).toMatchObject({ orders: 1, labor: egp(300) });
+    expect(people.rows.find((x: { role: string }) => x.role === "مهندس")).toMatchObject({ delivered: 1, labor: egp(300) });
   });
 
   it("every report runs and is Admin only", async () => {

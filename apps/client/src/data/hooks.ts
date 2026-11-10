@@ -5,6 +5,8 @@ import { api, ApiError } from "./api";
 /* Any successful write tells every mounted query to reload (small app, few queries on screen). */
 const listeners = new Set<() => void>();
 export const invalidateAll = () => listeners.forEach((f) => f());
+/** Run something after every change (own writes and live updates from other PCs). Returns the unsubscribe. */
+export const onInvalidate = (f: () => void) => { listeners.add(f); return () => { listeners.delete(f); }; };
 
 export function useApi<T>(path: string | null) {
   const [state, setState] = useState<{ data?: T; error?: ApiError; loading: boolean }>({ loading: !!path });

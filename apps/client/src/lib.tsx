@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type AnchorHTMLAttributes, type ReactNode } from "react";
 import { api, ApiError, hasStoredSession, login, logout, onConn, onSessionEnded, refreshSession, rememberUser, setApiUser, type Conn } from "./data/api";
 import { startSync, stopSync } from "./data/sync";
+import { onInvalidate } from "./data/hooks";
 import { can, type Action } from "@jc/core";
 
 /* ---------- Hash router (the app runs from a file in Tauri, so hash URLs) ---------- */
@@ -39,6 +40,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [sync, setSync] = useState<Conn>("online");
   useEffect(() => onConn(setSync), []);
   useEffect(() => onSessionEnded(() => setUser(null)), []);
+  // Permissions changed by an admin on another PC apply here live: menus and buttons follow without a reload.
+  useEffect(() => onInvalidate(() => {
+    if (!hasStoredSession()) return;
+    api<SessionUser>("/auth/me").then((u) => setUser((prev) => (prev && JSON.stringify(prev) !== JSON.stringify(u) ? u : prev))).catch(() => {});
+  }), []);
   useEffect(() => {
     if (!hasStoredSession()) return;
     refreshSession()

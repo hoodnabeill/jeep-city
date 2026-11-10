@@ -2,12 +2,12 @@ import { useState } from "react";
 import {
   BellRing, CircleCheck, ClipboardCheck, FileSignature, Fuel, Hammer, MessageCircle, PackageOpen, Printer, ReceiptText, Wrench, PackagePlus,
 } from "lucide-react";
-import { Badge, Button, DL, Dialog, Field, Input, Money, Panel, Select, Tabs, Textarea, useFmt, When } from "@jc/ui";
+import { Badge, Button, Chip, DL, Dialog, Field, Input, Money, Panel, Select, Tabs, Textarea, useFmt, When } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
 import { go, Link, useHotkey } from "../lib";
 import { api } from "../data/api";
 import { useAction, useApi } from "../data/hooks";
-import type { CatalogHit, Line, Package, Technician, WorkOrder, WOStatus } from "../data/types";
+import type { CatalogHit, Line, Package, Technician, User, WorkOrder, WOStatus } from "../data/types";
 import { LinesTable, totalsOf } from "./lines";
 import { CarDiagram, MARK_KIND, toDiagramMarks } from "./CarDiagram";
 import { carName, CarPlate, SignaturePad, useWaTemplates, WhatsAppButton, WO_TYPE } from "./common";
@@ -28,6 +28,8 @@ export function WorkOrderScreen({ id }: { id: string }) {
   const templates = useWaTemplates().filter((t) => t.id !== "reminder");
   const [remOpen, setRemOpen] = useState(false);
   const [sigOpen, setSigOpen] = useState(false);
+  const [staff, setStaff] = useState<{ engineer: string; techs: string[] } | null>(null);
+  const users = useApi<User[]>(staff ? "/users" : null);
   const [sig, setSig] = useState<string | null>(null);
   const [rem, setRem] = useState({ dueDate: "", dueKm: "", note: "" });
   const [approval, setApproval] = useState({ newPt: "", by: "", method: "phone" as "phone" | "whatsapp" | "in_person" });
@@ -77,7 +79,7 @@ export function WorkOrderScreen({ id }: { id: string }) {
         <DL cols={4} items={[
           { label: "العميل", value: <Link to={`/customers/${c.id}`} className="link">{c.name}</Link> },
           { label: "الموبايل", value: <span className="num">{f.s(c.mobile ?? "—")}</span> },
-          { label: "مهندس الاستقبال", value: wo.engineer ?? "—" },
+          { label: <>مهندس الاستقبال{editable && <button type="button" className="link" aria-label="تغيير مهندس الاستقبال والفنيين" style={{ border: 0, background: "none", marginInlineStart: 6 }} onClick={() => setStaff({ engineer: wo.receptionUserId ?? "", techs: wo.technicians.map((x) => x.id) })}>تغيير</button>}</>, value: wo.engineer ?? "—" },
           { label: "الفنيين", value: wo.technicians.map((x) => x.name).join("، ") || <span className="subtle">لم يُحدد</span> },
           { label: "الدخول", value: <When iso={wo.enteredAt} /> },
           { label: "التسليم المتوقع", value: wo.expectedAt ? <When iso={wo.expectedAt} /> : <span className="subtle">—</span> },
@@ -209,6 +211,23 @@ export function WorkOrderScreen({ id }: { id: string }) {
         </div>
       </Dialog>
 
+      <Dialog open={!!staff} onClose={() => setStaff(null)} title="مهندس الاستقبال والفنيين"
+        footer={<><Button onClick={() => setStaff(null)}>رجوع</Button><Button variant="primary" onClick={async () => {
+          const r = await run(() => api(`/work-orders/${wo.id}`, { method: "PATCH", body: { receptionUserId: staff!.engineer || undefined, technicianIds: staff!.techs } }), "تم حفظ المهندس والفنيين.");
+          if (r) setStaff(null);
+        }}>حفظ</Button></>}>
+        {staff && <div className="stack" style={{ gap: 14 }}>
+          <Field label="مهندس الاستقبال"><Select value={staff.engineer} onChange={(e) => setStaff({ ...staff, engineer: e.target.value })}>
+            {(users.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.displayName}</option>)}
+          </Select></Field>
+          <div className="field"><span className="field__label">الفنيين على العربية</span>
+            <div className="chips">{(techs.data ?? []).filter((x) => x.active || staff.techs.includes(x.id)).map((x) => (
+              <Chip key={x.id} pressed={staff.techs.includes(x.id)} onToggle={() => setStaff({ ...staff, techs: staff.techs.includes(x.id) ? staff.techs.filter((y) => y !== x.id) : [...staff.techs, x.id] })}>{x.name}</Chip>
+            ))}</div>
+          </div>
+          <p className="hint-line">الأسماء دي للاستخدام الداخلي وتقرير الأداء بس، ومش بتظهر في أي ورقة بتتطبع للعميل.</p>
+        </div>}
+      </Dialog>
       <Dialog open={sigOpen} onClose={() => setSigOpen(false)} title={`توقيع ${c.name}`}
         footer={<><Button onClick={() => setSigOpen(false)}>رجوع</Button><Button variant="primary" disabled={!sig} onClick={async () => {
           const r = await run(() => api(`/work-orders/${wo.id}/signature`, { method: "POST", body: { dataUrl: sig } }), "تم حفظ التوقيع. يظهر على كارت الإصلاح.");

@@ -27,6 +27,7 @@ const Header = z.object({
   complaint: opt(2000), engineerNotes: opt(2000), customerNotes: opt(2000), internalNotes: opt(2000),
   fuelLevel: z.number().int().min(1).max(4).nullable().optional(), belongings: z.array(z.string().max(40)).max(20).optional(),
   estimatePt: int.nonnegative().nullable().optional(), technicianIds: z.array(z.uuid()).max(10).optional(),
+  receptionUserId: z.uuid().optional(),
 });
 export const CreateWO = Header.extend({
   id: z.uuid(),
@@ -154,6 +155,8 @@ export function workOrderRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
       if (p.status === "closed" && wo.type === "repair") throw new AppError(422, "close_repair", "أمر الإصلاح يُقفل بتحويله إلى بيان عميل.");
       await tx.update(workOrders).set({ ...rest, ...(expectedAt !== undefined ? { expectedAt: expectedAt ? new Date(expectedAt) : null } : {}), updatedAt: new Date() }).where(eq(workOrders.id, id));
       if (technicianIds) await setTechnicians(tx, id, technicianIds);
+      if (technicianIds || (p.receptionUserId && p.receptionUserId !== wo.receptionUserId))
+        await audit(tx, actor, "workOrder.staff", "work_order", id, { receptionUserId: wo.receptionUserId }, { receptionUserId: p.receptionUserId ?? wo.receptionUserId, technicianIds });
       if (p.status && p.status !== wo.status) await audit(tx, actor, "workOrder.status", "work_order", id, { status: wo.status }, { status: p.status });
     });
     return loadWorkOrder(db, actor, id);

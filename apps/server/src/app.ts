@@ -9,6 +9,7 @@ import type { Config } from "./config";
 import type { Db } from "./db/client";
 import { errorHandler } from "./errors";
 import { routes } from "./routes";
+import { activityLog } from "./activity";
 
 // The Windows app (Tauri) and the phone apps (Capacitor) call the server from these origins (D-88).
 // Auth is a Bearer token, not a cookie, so no other site can act as a logged-in user.
@@ -29,5 +30,6 @@ export async function buildApp(db: Db, cfg: Config, opts: { logger?: boolean } =
   });
   authRoutes(app, db, cfg);
   routes(app, db, cfg);
+  activityLog(app, db);
   return app;
 }

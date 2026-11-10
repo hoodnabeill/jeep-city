@@ -5,7 +5,7 @@ import { Button, GRADE_LABEL, Segmented, useFmt } from "@jc/ui";
 import { CarPlate } from "../screens/common";
 import { useApi } from "../data/hooks";
 import { api } from "../data/api";
-import { STATEMENT_KIND, type Customer, type Line, type PaymentMethod, type Statement, type Technician, type WorkOrder } from "../data/types";
+import { STATEMENT_KIND, type Customer, type Line, type PaymentMethod, type Statement, type WorkOrder } from "../data/types";
 import { PageState } from "../shell/Shell";
 import { queryParam } from "../lib";
 import { CarDiagram, MARK_KIND, toDiagramMarks } from "../screens/CarDiagram";
@@ -64,17 +64,16 @@ const Cell = ({ l, v, en, span }: { l: string; v: ReactNode; en?: string; span?:
 const PlateText = ({ v }: { v?: { plateType?: string | null; plateLetters: string | null; plateDigits: string | null } | null }) =>
   v?.plateLetters || v?.plateDigits ? <CarPlate v={v} /> : <>—</>;
 
-/** Statement + its work order (or customer for a direct sale) + payment method names + technician names. */
+/** Statement + its work order (or customer for a direct sale) + payment method names. Staff names stay off customer prints. */
 function useStatementPrint(id: string) {
   const st = useApi<Statement>(`/statements/${id}`);
   const wo = useApi<WorkOrder>(st.data?.workOrderId ? `/work-orders/${st.data.workOrderId}` : null);
   const cust = useApi<Customer>(st.data && !st.data.workOrderId ? `/customers/${st.data.customerId}` : null);
   const methods = useApi<PaymentMethod[]>("/payment-methods");
-  const techs = useApi<Technician[]>("/technicians");
   const shop = useShop();
   const ready = st.data && methods.data && shop && (st.data.workOrderId ? wo.data : cust.data);
   const error = st.error ?? wo.error ?? cust.error;
-  return { ready: !!ready, error, s: st.data!, wo: wo.data, customerName: wo.data?.customer.name ?? cust.data?.name ?? "", mobile: wo.data?.customer.mobile ?? cust.data?.mobile ?? "", methods: methods.data ?? [], techs: techs.data ?? [], shop: shop! };
+  return { ready: !!ready, error, s: st.data!, wo: wo.data, customerName: wo.data?.customer.name ?? cust.data?.name ?? "", mobile: wo.data?.customer.mobile ?? cust.data?.mobile ?? "", methods: methods.data ?? [], shop: shop! };
 }
 
 function netPayments(s: Statement) {
@@ -110,14 +109,13 @@ export function PrintStatement({ id }: { id: string }) {
           <Cell l="رقم الشاسيه" v={<span className="lat">{v?.chassis ?? "—"}</span>} span={2} />
           <Cell l="طراز السيارة" v={<span className="lat">{v ? [v.make?.toUpperCase(), v.variant ?? v.model?.toUpperCase()].filter(Boolean).join(" ") : "—"}</span>} />
           <Cell l="عداد كم" v={<span className="lat">{wo?.odometerIn != null ? f.n(wo.odometerIn) : "—"}</span>} />
-          <Cell l="مهندس الاستقبال" v={wo?.engineer ?? "—"} />
-          <Cell l="الموبايل" v={<span className="lat">{f.s(d.mobile ?? "—")}</span>} span={2} />
+          <Cell l="الموبايل" v={<span className="lat">{f.s(d.mobile ?? "—")}</span>} span={3} />
         </section>
 
         <h2 className="p-h2">المصنعيات</h2>
-        <PTable rows={s.lines.filter((l) => l.category === "labor")} kind="labor" techs={d.techs} />
+        <PTable rows={s.lines.filter((l) => l.category === "labor")} kind="labor" />
         <h2 className="p-h2">قطع الغيار</h2>
-        <PTable rows={s.lines.filter((l) => l.category !== "labor")} kind="parts" techs={d.techs} />
+        <PTable rows={s.lines.filter((l) => l.category !== "labor")} kind="parts" />
 
         <section className="p-bottom">
           <div className="p-notes">
@@ -155,7 +153,7 @@ export function PrintStatement({ id }: { id: string }) {
   );
 }
 
-function PTable({ rows, kind, techs }: { rows: Line[]; kind: "labor" | "parts"; techs: Technician[] }) {
+function PTable({ rows, kind }: { rows: Line[]; kind: "labor" | "parts" }) {
   const f = useFmt();
   const value = (l: Line) => Math.round((l.qtyMilli * l.unitPricePt) / 1000);
   const sum = rows.reduce((a, l) => a + value(l), 0);
@@ -166,7 +164,7 @@ function PTable({ rows, kind, techs }: { rows: Line[]; kind: "labor" | "parts"; 
           <th style={{ width: "13%" }}>كود الصنف</th><th>اسم الصنف</th>
           {kind === "parts" && <th style={{ width: "9%" }}>الجودة</th>}
           <th style={{ width: "10%" }}>{kind === "labor" ? "الوقت / الكمية" : "الكمية"}</th>
-          <th style={{ width: "11%" }}>السعر</th><th style={{ width: "12%" }}>القيمة</th><th style={{ width: "15%" }}>اسم الفني</th>
+          <th style={{ width: "11%" }}>السعر</th><th style={{ width: "12%" }}>القيمة</th>
           {kind === "labor" && <th style={{ width: "11%" }}>انتهاء العمل</th>}
         </tr>
       </thead>
@@ -176,7 +174,6 @@ function PTable({ rows, kind, techs }: { rows: Line[]; kind: "labor" | "parts"; 
             <td className="lat">{l.code}</td><td>{l.name}</td>
             {kind === "parts" && <td>{l.grade ? <span className={`p-grade p-grade--${l.grade}`}>{GRADE_LABEL[l.grade]}</span> : "—"}</td>}
             <td className="lat c">{f.n(l.qtyMilli / 1000)}</td><td className="lat c">{f.pt(l.unitPricePt)}</td><td className="lat c">{f.pt(value(l))}</td>
-            <td>{l.technician ?? techs.find((t) => t.id === l.technicianId)?.name ?? ""}</td>
             {kind === "labor" && <td>{l.finishedAt ? f.time(l.finishedAt) : ""}</td>}
           </tr>
         ))}
@@ -209,9 +206,7 @@ export function PrintJobCard({ id }: { id: string }) {
           <Cell l="اسم العميل" en="Customer" v={wo.customer.name} span={2} />
           <Cell l="الموبايل" en="Mobile" v={<span className="lat">{f.s(wo.customer.mobile ?? "—")}</span>} />
           <Cell l="تليفون" en="Phone" v={<span className="lat">{c?.officePhone ? f.s(c.officePhone) : "—"}</span>} />
-          <Cell l="العنوان" en="Address" v={c?.address ?? "—"} span={2} />
-          <Cell l="مهندس الاستقبال" en="Service advisor" v={wo.engineer ?? "—"} />
-          <Cell l="الفني" en="Technician" v={wo.technicians.map((t) => t.name).join("، ") || "—"} />
+          <Cell l="العنوان" en="Address" v={c?.address ?? "—"} span={4} />
           <Cell l="الماركة / الموديل / السنة" en="Make / Model / Year" v={<span className="lat">{v ? `${[v.make, v.model, v.variant].filter(Boolean).join(" ")}${v.year ? ` · ${v.year}` : ""}` : "—"}</span>} span={2} />
           <Cell l="رقم اللوحة" en="Plate" v={<PlateText v={v} />} />
           <Cell l="عداد الدخول" en="Odometer in" v={<span className="lat">{wo.odometerIn != null ? `${f.n(wo.odometerIn)} km` : "—"}</span>} />
@@ -246,7 +241,7 @@ export function PrintJobCard({ id }: { id: string }) {
         <p className="p-terms">{box(true)} أوافق على استكمال الإصلاح إذا زادت التكلفة عن التقدير، بحد أقصى ________<span className="p-en">Authority to continue if the estimate is exceeded</span></p>
         {shop.terms ? <p className="p-terms">{shop.terms}</p> : <p className="p-terms p-placeholder">[شروط كارت الإصلاح: يُكتب هنا النص المعتمد من الورشة في الإعدادات ← النصوص]</p>}
         <div className="p-signs">
-          <div><span><span className="p-ar">أعده</span><span className="p-en">Prepared by</span></span><b>{wo.engineer}</b></div>
+          <div><span><span className="p-ar">أعده</span><span className="p-en">Prepared by</span></span><b /></div>
           <div><span><span className="p-ar">توقيع العميل</span><span className="p-en">Customer signature</span></span>{sig.data?.dataUrl && <img src={sig.data.dataUrl} alt="توقيع العميل" className="p-sig" />}</div>
         </div>
         <footer className="p-foot"><span className="lat">EL REHAB · NEW CAIRO</span><StatusQr workOrderId={wo.id} /><span className="p-foot__mode">نسخة العميل</span></footer>

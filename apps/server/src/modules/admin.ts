@@ -1,5 +1,5 @@
 /** Settings, payment methods, numbering starts, users, technicians, audit log (Admin). */
-import { and, desc, eq, gte, isNull, lte, max, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lt, lte, max, sql } from "drizzle-orm";
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
 import { ACTIONS, can, uuidv7, type Action } from "@jc/core";
@@ -125,10 +125,17 @@ export function adminRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
   });
 
   app.get("/audit", { preHandler: [auth, requirePerm("audit.view")] }, async (req) => {
-    const q = z.object({ entity: z.string().optional(), entityId: z.string().optional(), from: z.iso.date().optional(), to: z.iso.date().optional(), limit: z.coerce.number().int().min(1).max(500).default(100) }).parse(req.query);
+    const q = z.object({
+      entity: z.string().optional(), entityId: z.string().optional(), from: z.iso.date().optional(), to: z.iso.date().optional(),
+      userId: z.uuid().optional(), kind: z.enum(["change", "view", "search", "login"]).optional(), before: z.iso.datetime().optional(),
+      limit: z.coerce.number().int().min(1).max(500).default(100),
+    }).parse(req.query);
+    const kind = { view: eq(auditLog.action, "view"), search: eq(auditLog.action, "search"), login: sql`${auditLog.action} like 'auth.%'`,
+      change: sql`${auditLog.action} not in ('view', 'search') and ${auditLog.action} not like 'auth.%'` };
     const where = and(
       q.entity ? eq(auditLog.entity, q.entity) : undefined, q.entityId ? eq(auditLog.entityId, q.entityId) : undefined,
-      q.from ? gte(auditLog.at, new Date(q.from)) : undefined, q.to ? lte(auditLog.at, new Date(`${q.to}T23:59:59Z`)) : undefined,
+      q.from ? gte(auditLog.at, new Date(`${q.from}T00:00:00+02:00`)) : undefined, q.to ? lte(auditLog.at, new Date(`${q.to}T23:59:59.999+02:00`)) : undefined,
+      q.userId ? eq(auditLog.userId, q.userId) : undefined, q.kind ? kind[q.kind] : undefined, q.before ? lt(auditLog.at, new Date(q.before)) : undefined,
     );
     return db.select({ id: auditLog.id, at: auditLog.at, action: auditLog.action, entity: auditLog.entity, entityId: auditLog.entityId, before: auditLog.before, after: auditLog.after, user: users.displayName })
       .from(auditLog).leftJoin(users, eq(users.id, auditLog.userId)).where(where).orderBy(desc(auditLog.at)).limit(q.limit);

@@ -51,8 +51,10 @@ async function open(page, hash) {
 }
 const blocked = async (page) => (await mainText(page)).includes("ليس لديك صلاحية");
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+let adminToken = null; // one API login per run: the server limits logins per minute
+async function adminApi() { return (adminToken ??= (await apiLogin("ahmed")).accessToken); }
 async function resetKarim() {
-  const at = (await apiLogin("ahmed")).accessToken;
+  const at = await adminApi();
   const karim = (await (await apiCall(at, "GET", "/users")).json()).find((u) => u.username === "karim");
   return (await apiCall(at, "PATCH", `/users/${karim.id}`, { permissions: null })).ok;
 }
@@ -176,12 +178,61 @@ async function resetKarim() {
     }
     check(e.errors.length === 0, `engineer: no page errors${e.errors.length ? " -> " + e.errors.slice(0, 3).join(" | ") : ""}`);
 
-    /* ---------- Restore karim to the engineer defaults ---------- */
-    check(await resetKarim(), "karim restored to role defaults");
+    /* ---------- Live updates (SSE): another PC's change shows here without a reload ---------- */
+    const at = await adminApi();
+    await open(e.page, "/customers");
+    const liveName = `عميل لايف ${Date.now() % 100000}`;
+    await apiCall(at, "POST", "/customers", { name: liveName, mobile: "01009998877" });
+    check(await e.page.getByText(liveName).first().waitFor({ timeout: 10000 }).then(() => true, () => false), "live: a customer added on another PC appears without reload");
     await open(e.page, "/");
-    await e.page.reload();
-    await e.page.locator(".home-tile").first().waitFor();
-    check(same(await tiles(e.page), ["الاستقبال", "المخزن"]), "after reset the engineer sees 2 tiles");
+    check(await resetKarim(), "karim restored to role defaults");
+    const liveTiles = await e.page.waitForFunction(() => document.querySelectorAll(".home-tile").length === 2, null, { timeout: 10000 }).then(() => true, () => false);
+    check(liveTiles && same(await tiles(e.page), ["الاستقبال", "المخزن"]), "live: removing a permission updates the engineer's tiles without reload");
+
+    /* ---------- Staff are internal: assign on the work order, never on customer prints ---------- */
+    await open(a.page, "/board");
+    await a.page.locator(".car-tile").first().click();
+    await a.page.waitForURL(/work-orders/);
+    const woId = a.page.url().split("/work-orders/")[1];
+    await a.page.getByText("مهندس الاستقبال").first().waitFor();
+    const editable = await a.page.getByRole("button", { name: "تغيير مهندس الاستقبال والفنيين" }).count();
+    if (editable) {
+      await a.page.getByRole("button", { name: "تغيير مهندس الاستقبال والفنيين" }).click();
+      const sd = a.page.locator("dialog[open]");
+      await sd.getByRole("combobox", { name: "مهندس الاستقبال" }).selectOption({ label: "أحمد الطنطاوي" });
+      await sd.getByRole("button", { name: "حفظ" }).click();
+      await sd.waitFor({ state: "hidden" }).catch(() => {});
+      check((await mainText(a.page)).includes("أحمد الطنطاوي"), "work order: engineer changed from the dialog");
+    }
+    await a.page.goto(`${URL}/#/print/job-card/${woId}`); // print pages have no <main>
+    await a.page.locator(".sheet").first().waitFor();
+    const card = await a.page.locator(".sheet").first().innerText();
+    check(!card.includes("مهندس الاستقبال") && !card.includes("الفني") && !card.includes("أحمد الطنطاوي"), "job card print shows no engineer or technician");
+    await open(a.page, "/statements");
+    await a.page.locator("main tbody tr.is-clickable").first().click();
+    await a.page.waitForURL(/statements\/./);
+    const stId = a.page.url().split("/statements/")[1];
+    await a.page.goto(`${URL}/#/print/statement/${stId}`);
+    await a.page.locator(".sheet").first().waitFor();
+    const st = await a.page.locator(".sheet").first().innerText();
+    check(!st.includes("مهندس الاستقبال") && !st.includes("اسم الفني"), "statement print shows no engineer or technician");
+
+    /* ---------- Activity log and staff performance ---------- */
+    await open(a.page, "/activity");
+    await a.page.getByRole("radio", { name: "فتح" }).click();
+    await a.page.waitForTimeout(800);
+    const opened = await a.page.locator("main tbody tr").count();
+    check(opened > 0 && (await a.page.locator("main tbody tr").first().innerText()).includes("فتح"), `activity log: opened work orders are listed (${opened})`);
+    await a.page.getByRole("radio", { name: "تعديلات" }).click();
+    await a.page.waitForTimeout(800);
+    check((await mainText(a.page)).includes("إضافة عميل"), "activity log: the customer added from another PC is listed");
+    await a.page.screenshot({ path: path.join(SHOTS, "activity.png"), fullPage: true });
+    await open(a.page, "/reports");
+    await a.page.getByRole("combobox", { name: "التقرير" }).selectOption({ label: "أداء المهندسين والفنيين" });
+    await a.page.getByRole("radio", { name: "12 شهر" }).click();
+    await a.page.getByRole("columnheader", { name: "عربيات استلمها" }).first().waitFor({ timeout: 10000 });
+    check((await a.page.locator("main tbody tr").count()) > 0, "staff performance report lists people for 12 months");
+    await a.page.screenshot({ path: path.join(SHOTS, "staff-report.png"), fullPage: true });
 
     /* ---------- Phone layout ---------- */
     await a.page.setViewportSize({ width: 390, height: 844 });
