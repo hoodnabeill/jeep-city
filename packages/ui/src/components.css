@@ -308,7 +308,8 @@
 .rule-yellow { height: 3px; background: var(--jc-yellow); border: 0; margin: 0; }
 
 /* ---------- Date/time ---------- */
-.when { white-space: nowrap; }
+.when { white-space: normal; }
+.when > span { white-space: nowrap; }
 .when__sep { color: var(--text-subtle); }
 
 /* ---------- Overflow menu ---------- */
