@@ -4,6 +4,7 @@ import { can, type Action } from "@jc/core";
 import { Shell } from "./shell/Shell";
 import { Login } from "./screens/Login";
 import { Dashboard } from "./screens/Dashboard";
+import { Home } from "./screens/Home";
 import { Reception } from "./screens/Reception";
 import { Intake } from "./screens/Intake";
 import { WorkOrderScreen } from "./screens/WorkOrder";
@@ -16,7 +17,7 @@ import { Customers, CustomerFile } from "./screens/Customers";
 import { CashDrawer } from "./screens/CashDrawer";
 import { Reports } from "./screens/Reports";
 import { Alerts } from "./screens/Alerts";
-import { SettingsScreen } from "./screens/Settings";
+import { SettingsScreen, UsersScreen } from "./screens/Settings";
 import { NoAccess } from "./screens/NoAccess";
 import { DirectSale } from "./screens/DirectSale";
 import { PrintStatement, PrintJobCard, PrintCondition, PrintReceipt, PrintReport, PrintLabels } from "./print/Prints";
@@ -25,7 +26,9 @@ import { PublicStatus } from "./screens/PublicStatus";
 
 type Route = { path: string; render: (p: Record<string, string>) => ReactNode; perm?: Action; bare?: boolean };
 const routes: Route[] = [
-  { path: "/", render: () => <Dashboard /> },
+  { path: "/", render: () => <Home /> },
+  { path: "/board", render: () => <Dashboard /> },
+  { path: "/users", render: () => <UsersScreen />, perm: "settings.manage" },
   { path: "/reception", render: () => <Reception /> },
   { path: "/intake", render: () => <Intake /> },
   { path: "/direct-sale", render: () => <DirectSale /> },
@@ -34,9 +37,9 @@ const routes: Route[] = [
   { path: "/statements", render: () => <Statements /> },
   { path: "/statements/new", render: () => <StatementScreen /> },
   { path: "/statements/:id", render: (p) => <StatementScreen id={p.id} /> },
-  { path: "/items", render: () => <Items /> },
-  { path: "/items/:id", render: (p) => <ItemDetail id={p.id} /> },
-  { path: "/labels", render: () => <LabelMaker /> },
+  { path: "/items", render: () => <Items />, perm: "item.view" },
+  { path: "/items/:id", render: (p) => <ItemDetail id={p.id} />, perm: "item.view" },
+  { path: "/labels", render: () => <LabelMaker />, perm: "label.print" },
   { path: "/customers", render: () => <Customers /> },
   { path: "/customers/:id", render: (p) => <CustomerFile id={p.id} /> },
   { path: "/cars/:id", render: (p) => <CustomerFile vehicleId={p.id} /> },

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Building2, Cpu, DatabaseBackup, Hash, IdCard, MessageCircle, Percent, Printer, Receipt, ScanLine, Settings2, Users, Wallet, ArrowUp, ArrowDown,
+  Building2, Cpu, DatabaseBackup, Hash, IdCard, MessageCircle, Percent, Printer, Receipt, ScanLine, Settings2, Wallet, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Badge, Button, Dialog, Field, Input, Panel, Segmented, Select, Switch, Textarea, useDigits, useFmt } from "@jc/ui";
 import { PERMISSION_INFO, roleDefaults, SECTION_LABEL, type Action, type Category, type Role, type Section } from "@jc/core";
@@ -19,7 +19,6 @@ const SECTIONS = [
   { id: "texts", label: "النصوص ورسائل واتساب", icon: MessageCircle },
   { id: "tax", label: "الخصومات والضرائب", icon: Percent },
   { id: "devices", label: "الأجهزة والطباعة", icon: Cpu },
-  { id: "users", label: "المستخدمون والفنيين", icon: Users },
   { id: "backup", label: "النسخ الاحتياطي", icon: DatabaseBackup },
   { id: "general", label: "عام", icon: Settings2 },
 ] as const;
@@ -45,7 +44,6 @@ export function SettingsScreen() {
             {sec === "texts" && <TextsSec s={s.data} />}
             {sec === "tax" && <TaxSec s={s.data} />}
             {sec === "devices" && <DevicesSec s={s.data} />}
-            {sec === "users" && <UsersSec />}
             {sec === "backup" && <BackupSec />}
             {sec === "general" && <GeneralSec s={s.data} />}
           </>}
@@ -271,6 +269,16 @@ function PermissionSwitches({ value, onChange }: { value: Action[]; onChange: (v
           ))}
         </fieldset>
       ))}
+    </div>
+  );
+}
+
+/** The Users section of the home screen (moved out of Settings). */
+export function UsersScreen() {
+  return (
+    <div>
+      <PageHead title="المستخدمين والصلاحيات" sub="كل مستخدم له صلاحياته: اختار نوع الحساب ثم شغّل أو اقفل أي صلاحية." />
+      <div className="stack"><UsersSec /></div>
     </div>
   );
 }

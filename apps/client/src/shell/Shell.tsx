@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  ArrowRight, BarChart3, Bell, CarFront, ChevronDown, CloudOff, FileText, LayoutDashboard, LogOut, Package, RefreshCw,
-  Search, Settings, Truck, Users, UserRoundCog, Wallet, Wifi, Plus, Wrench, Receipt,
+  ArrowRight, Bell, LayoutGrid, ChevronDown, CloudOff, FileText, LogOut, Package, RefreshCw,
+  Search, Settings, Truck, Users, UserRoundCog, Wifi, Plus, Wrench, Receipt,
 } from "lucide-react";
 import { Avatar, GRADE_LABEL, Kbd, useDigits, useFmt } from "@jc/ui";
 import { api } from "../data/api";
@@ -11,27 +11,8 @@ import { useSyncState } from "../data/sync";
 import type { Customer, Item, LookupHit, StatementRow, Supplier, WorkOrderRow } from "../data/types";
 import { CarPlate } from "../screens/common";
 import { daysIn, go, Link, useHotkey, useCan, useSession } from "../lib";
-import { can, type Action } from "@jc/core";
-
-const NAV = [
-  { to: "/", label: "الرئيسية", icon: LayoutDashboard },
-  { to: "/reception", label: "الاستقبال", icon: CarFront, count: true },
-  { to: "/statements", label: "بيانات العملاء", icon: FileText },
-  { to: "/customers", label: "العملاء والسيارات", icon: Users },
-  { to: "/items", label: "المخزن والأصناف", icon: Package },
-  { to: "/alerts", label: "المذكرات والتنبيهات", icon: Bell },
-  { to: "/suppliers", label: "الموردين والمشتريات", icon: Truck, perm: "supplier.manage" as Action },
-  { to: "/cash", label: "صندوق الكاش", icon: Wallet, perm: "cash.manage" as Action },
-  { to: "/reports", label: "التقارير", icon: BarChart3, perm: "report.view" as Action },
-  { to: "/settings", label: "الإعدادات", icon: Settings, perm: "settings.manage" as Action },
-];
-
-function activeNav(path: string) {
-  if (path === "/") return "/";
-  if (path.startsWith("/work-orders") || path.startsWith("/intake") || path.startsWith("/condition")) return "/reception";
-  if (path.startsWith("/cars")) return "/customers";
-  return NAV.find((n) => n.to !== "/" && path.startsWith(n.to))?.to ?? "";
-}
+import { can } from "@jc/core";
+import { activeNav, sectionOf, visibleNav, visibleSections, type NavItem } from "./sections";
 
 export function Shell({ path, children }: { path: string; children: ReactNode }) {
   const { user } = useSession();
@@ -42,15 +23,26 @@ export function Shell({ path, children }: { path: string; children: ReactNode })
   const [paletteOpen, setPaletteOpen] = useState(false);
   useHotkey("k", () => setPaletteOpen(true));
   const inShop = useApi<WorkOrderRow[]>("/work-orders?status=in_shop");
-  const current = activeNav(path);
+  const current = path === "/" ? "/" : activeNav(path);
+  const section = sectionOf(path);
+  const sections = visibleSections(user);
+  const home: NavItem = { to: "/", label: "الرئيسية", icon: LayoutGrid };
+  // Inside a section: its own pages. On the home page or Settings: the sections themselves.
+  const items: NavItem[] = section ? [home, ...visibleNav(section, user)] : [home, ...sections.map((s) => ({ to: visibleNav(s, user)[0].to, label: s.label, icon: s.icon }))];
   return (
     <div className="app">
       <nav className="rail" aria-label="القائمة الرئيسية">
         <Link to="/" className="rail__logo" aria-label="Jeep City – الرئيسية">
           <img src="/brand/stacked-colour.svg" alt="Jeep City El Tantawy USA" width={168} height={104} />
         </Link>
+        {section && <>
+          <div className="rail__sections" role="group" aria-label="الأقسام">
+            {sections.map((s) => <Link key={s.id} to={visibleNav(s, user)[0].to} className="rail__section" aria-current={s.id === section.id} aria-label={s.label} title={s.label}><s.icon aria-hidden /></Link>)}
+          </div>
+          <p className="rail__title">{section.label}</p>
+        </>}
         <ul className="rail__nav">
-          {NAV.filter((n) => !n.perm || can(user, n.perm)).map((n) => (
+          {items.map((n) => (
             <li key={n.to}>
               <Link to={n.to} className="rail__item" aria-current={current === n.to ? "page" : undefined}>
                 <n.icon aria-hidden />
@@ -123,6 +115,7 @@ function TopBar({ onSearch, inShop }: { onSearch: () => void; inShop: WorkOrderR
             </div>
           )}
         </div>
+        {can(user, "settings.manage") && <Link to="/settings" className="icon-btn" aria-label="الإعدادات" title="الإعدادات"><Settings /></Link>}
         <div className="pop-anchor">
           <button type="button" className="icon-btn" aria-label={`التنبيهات (${alertCount})`} aria-expanded={menu === "alerts"} onClick={() => setMenu(menu === "alerts" ? "" : "alerts")}>
             <Bell />
