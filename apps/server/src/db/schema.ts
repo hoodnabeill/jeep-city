@@ -453,6 +453,22 @@ export const expenses = pgTable("expenses", {
   fromCash: boolean("from_cash").notNull().default(true),
 });
 
+/** The owners and their share of the net profit (basis points, all active shares total 10000). */
+export const partners = pgTable("partners", {
+  ...base(), ...archived(),
+  name: text("name").notNull(),
+  shareBp: integer("share_bp").notNull(),
+});
+/** Money a partner took out (negative = paid back). Append-only. */
+export const partnerWithdrawals = pgTable("partner_withdrawals", {
+  ...base(),
+  partnerId: uuid("partner_id").notNull().references(() => partners.id),
+  amountPt: money("amount_pt").notNull(),
+  takenAt: ts("taken_at").notNull(),
+  fromCash: boolean("from_cash").notNull().default(true),
+  note: text("note"),
+}, (t) => [index("partner_withdrawals_partner_ix").on(t.partnerId, t.takenAt)]);
+
 export const bonuses = pgTable("bonuses", {
   ...base(),
   userId: uuid("user_id").references(() => users.id),

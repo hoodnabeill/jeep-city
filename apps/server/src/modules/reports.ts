@@ -28,6 +28,31 @@ const sum = (rs: Record<string, unknown>[], keys: string[]) => Object.fromEntrie
 
 const finalIn = (from: string, to: string) => sql`s.status = 'final' and s.statement_date between ${from} and ${to}`;
 
+/**
+ * Net profit for a date range, on new-system statements only (Byte statements carry no cost, D-80):
+ * sales without VAT - cost of parts sold - expenses - technician bonuses - (sales returns - cost of the returned stock).
+ */
+export async function profitSummary(db: Db, from: string, to: string) {
+  const [p] = await rows(db, sql`select
+      coalesce(sum(s.amount_due_pt) filter (where s.kind <> 'byte'), 0) as "newSalesPt",
+      coalesce(sum(coalesce((s.totals->>'taxPt')::bigint, 0)) filter (where s.kind <> 'byte'), 0) as "taxPt",
+      coalesce(sum(s.amount_due_pt) filter (where s.kind = 'byte'), 0) as "byteSalesPt",
+      (select coalesce(sum(-m.qty_milli * m.unit_cost_pt / 1000), 0) from stock_movements m
+         left join doc_lines l on m.ref_type = 'doc_line' and l.id = m.ref_id
+         join statements s2 on s2.id = coalesce(l.statement_id, case when m.ref_type = 'statement' then m.ref_id end)
+         where s2.status = 'final' and s2.kind <> 'byte' and s2.statement_date between ${from} and ${to}) as "cogsPt",
+      (select coalesce(sum(e.amount_pt), 0) from expenses e where ${day(sql`e.spent_at`)} between ${from}::date and ${to}::date) as "expensesPt",
+      (select coalesce(sum(b.amount_pt), 0) from bonuses b where ${day(sql`b.given_at`)} between ${from}::date and ${to}::date) as "bonusesPt",
+      (select coalesce(sum(r.total_pt), 0) from sales_returns r join statements s3 on s3.id = r.statement_id
+         where s3.kind <> 'byte' and ${day(sql`r.created_at`)} between ${from}::date and ${to}::date) as "returnsPt",
+      (select coalesce(sum(m.qty_milli * m.unit_cost_pt / 1000), 0) from stock_movements m
+         where m.kind = 'sales_return' and ${day(sql`m.created_at`)} between ${from}::date and ${to}::date) as "returnedCostPt"
+    from statements s where ${finalIn(from, to)}`);
+  const x = Object.fromEntries(Object.entries(p).map(([k, v]) => [k, Number(v)])) as Record<string, number>;
+  x.profitPt = x.newSalesPt - x.taxPt - x.cogsPt - x.expensesPt - x.bonusesPt - (x.returnsPt - x.returnedCostPt);
+  return x;
+}
+
 export const REPORTS: Record<string, { title: string; ranged: boolean; run: (db: Db, from: string, to: string) => Promise<Omit<Report, "title">> }> = {
   sales: {
     title: "المبيعات والربح", ranged: true,
@@ -37,18 +62,7 @@ export const REPORTS: Record<string, { title: string; ranged: boolean; run: (db:
           sum(${net("labor")}) as labor, sum(${net("part")}) as parts, sum(${net("oil")}) as oils, sum(${net("material")} + ${net("paint")}) as materials,
           sum(coalesce((s.totals->>'discountPt')::bigint, 0)) as discount, sum(coalesce((s.totals->>'taxPt')::bigint, 0)) as tax, sum(s.amount_due_pt) as total
         from statements s where ${finalIn(from, to)} group by s.statement_date order by s.statement_date`);
-      // Profit only where the new system knows the cost: Byte statements carry no cost (D-80).
-      const [p] = await rows(db, sql`select
-          coalesce(sum(s.amount_due_pt) filter (where s.kind <> 'byte'), 0) as "newSalesPt",
-          coalesce(sum(s.amount_due_pt) filter (where s.kind = 'byte'), 0) as "byteSalesPt",
-          (select coalesce(sum(-m.qty_milli * m.unit_cost_pt / 1000), 0) from stock_movements m
-             left join doc_lines l on m.ref_type = 'doc_line' and l.id = m.ref_id
-             join statements s2 on s2.id = coalesce(l.statement_id, case when m.ref_type = 'statement' then m.ref_id end)
-             where s2.status = 'final' and s2.kind <> 'byte' and s2.statement_date between ${from} and ${to}) as "cogsPt",
-          (select coalesce(sum(e.amount_pt), 0) from expenses e where ${day(sql`e.spent_at`)} between ${from}::date and ${to}::date) as "expensesPt"
-        from statements s where ${finalIn(from, to)}`);
-      const summary = Object.fromEntries(Object.entries(p).map(([k, v]) => [k, Number(v)])) as Record<string, number>;
-      summary.profitPt = summary.newSalesPt - summary.cogsPt - summary.expensesPt;
+      const summary = await profitSummary(db, from, to);
       return {
         rows: rs, summary, totals: sum(rs, ["count", "labor", "parts", "oils", "materials", "discount", "tax", "total"]),
         columns: [

@@ -1,4 +1,4 @@
-import { BarChart3, Bell, CarFront, FileText, LayoutDashboard, Package, QrCode, Truck, UserRoundCog, Users, Wallet, type LucideIcon } from "lucide-react";
+import { BarChart3, Bell, CarFront, FileText, Handshake, LayoutDashboard, Package, QrCode, Truck, UserRoundCog, Users, Wallet, type LucideIcon } from "lucide-react";
 import { can, type Action, type PermissionHolder, type Section } from "@jc/core";
 
 export type NavItem = { to: string; label: string; icon: LucideIcon; perm?: Action; count?: true };
@@ -25,10 +25,11 @@ export const SECTIONS: AppSection[] = [
     ],
   },
   {
-    id: "accounts", label: "الحسابات والتقارير", sub: "صندوق الكاش والمصروفات والتقارير", icon: Wallet,
+    id: "accounts", label: "الحسابات والتقارير", sub: "صندوق الكاش والمصروفات والتقارير وأرباح الشركاء", icon: Wallet,
     nav: [
       { to: "/cash", label: "صندوق الكاش", icon: Wallet, perm: "cash.manage" },
       { to: "/reports", label: "التقارير", icon: BarChart3, perm: "report.view" },
+      { to: "/partners", label: "الشركاء", icon: Handshake, perm: "partners.manage" },
     ],
   },
   {

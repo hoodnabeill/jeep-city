@@ -1,5 +1,5 @@
 import {
-  createContext, useCallback, useContext, useEffect, useId, useRef, useState,
+  cloneElement, createContext, isValidElement, useCallback, useContext, useEffect, useId, useRef, useState,
   type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes,
   type TextareaHTMLAttributes, type CSSProperties, type Ref,
 } from "react";
@@ -73,13 +73,17 @@ export function IconButton({ label, size, count, className, children, ...rest }:
 export function Field({ label, hint, error, required, children, className, htmlFor }: {
   label: ReactNode; hint?: ReactNode; error?: ReactNode; required?: boolean; children: ReactNode; className?: string; htmlFor?: string;
 }) {
+  // Link the label to a single control so screen readers announce it (and clicking the label focuses it).
+  const auto = useId();
+  const only = isValidElement<{ id?: string }>(children) ? children : null;
+  const id = htmlFor ?? only?.props.id ?? (only ? auto : undefined);
   return (
     <div className={cx("field", !!error && "is-invalid", className)}>
-      <label className="field__label" htmlFor={htmlFor}>
+      <label className="field__label" htmlFor={id}>
         {label}
         {required && <span className="field__req" aria-hidden>*</span>}
       </label>
-      {children}
+      {only && !htmlFor && !only.props.id ? cloneElement(only, { id }) : children}
       {error ? (
         <span className="field__error" role="alert"><AlertCircle />{error}</span>
       ) : hint ? <span className="field__hint">{hint}</span> : null}

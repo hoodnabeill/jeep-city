@@ -34,6 +34,7 @@ export const PERMISSIONS = {
   "cash.manage": ADMIN,                // cash drawer, expenses
   "bonus.manage": ADMIN,
   "report.view": ADMIN,
+  "partners.manage": ADMIN,            // partner shares, profit split, withdrawals
   "label.print": BOTH,
   "settings.manage": ADMIN,            // settings, users, technicians, devices, import, backups
   "audit.view": ADMIN,
@@ -82,6 +83,7 @@ export const PERMISSION_INFO: Record<Exclude<Action, "session.use">, { section: 
   "cash.manage": { section: "accounts", label: "صندوق الكاش والمصروفات" },
   "bonus.manage": { section: "accounts", label: "حوافز الفنيين" },
   "report.view": { section: "accounts", label: "التقارير ومبيعات اليوم" },
+  "partners.manage": { section: "accounts", label: "الشركاء: النسب والأرباح والمسحوبات" },
   "settings.manage": { section: "users", label: "الإعدادات والمستخدمين والأجهزة" },
   "audit.view": { section: "users", label: "سجل العمليات" },
 };

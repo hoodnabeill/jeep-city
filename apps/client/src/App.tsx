@@ -5,6 +5,7 @@ import { Shell } from "./shell/Shell";
 import { Login } from "./screens/Login";
 import { Dashboard } from "./screens/Dashboard";
 import { Home } from "./screens/Home";
+import { PartnersScreen } from "./screens/Partners";
 import { Reception } from "./screens/Reception";
 import { Intake } from "./screens/Intake";
 import { WorkOrderScreen } from "./screens/WorkOrder";
@@ -47,6 +48,7 @@ const routes: Route[] = [
   { path: "/cash", render: () => <CashDrawer />, perm: "cash.manage" },
   { path: "/reports", render: () => <Reports />, perm: "report.view" },
   { path: "/alerts", render: () => <Alerts /> },
+  { path: "/partners", render: () => <PartnersScreen />, perm: "partners.manage" },
   { path: "/settings", render: () => <SettingsScreen />, perm: "settings.manage" },
   { path: "/print/statement/:id", render: (p) => <PrintStatement id={p.id} />, bare: true },
   { path: "/print/receipt/:id", render: (p) => <PrintReceipt id={p.id} />, bare: true },

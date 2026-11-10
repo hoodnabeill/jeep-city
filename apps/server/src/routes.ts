@@ -20,6 +20,7 @@ import { reportRoutes } from "./modules/reports";
 import { alertRoutes } from "./modules/alerts";
 import { shareRoutes } from "./modules/share";
 import { conditionRoutes } from "./modules/condition";
+import { partnerRoutes } from "./modules/partners";
 import { fileRoutes } from "./modules/files";
 import { Id } from "./http";
 
@@ -41,6 +42,7 @@ export function routes(app: FastifyInstance, db: Db, cfg: Config) {
   alertRoutes(app, db, auth);
   shareRoutes(app, db, auth);
   conditionRoutes(app, db, auth);
+  partnerRoutes(app, db, auth);
   fileRoutes(app, db, cfg, auth);
 
   app.post("/statements", { preHandler: [auth, requirePerm("statement.create")] }, async (req, reply) => {
