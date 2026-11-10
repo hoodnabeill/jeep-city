@@ -57,7 +57,7 @@ export async function createWorkOrder(db: Db, actor: Actor, raw: unknown) {
     const [last] = await tx.select({ km: max(odometerReadings.km) }).from(odometerReadings).where(eq(odometerReadings.vehicleId, v.id));
     const prev = last?.km ?? null;
     if (prev !== null && w.odometerIn < prev) {
-      if (!can(actor.role, "odometer.lowerThanPrevious")) throw new AppError(409, "odometer_lower", deniedMessage("odometer.lowerThanPrevious"), { previousKm: prev });
+      if (!can(actor, "odometer.lowerThanPrevious")) throw new AppError(409, "odometer_lower", deniedMessage("odometer.lowerThanPrevious"), { previousKm: prev });
       if (!w.odometerReason) throw new AppError(422, "reason_required", `القراءة أقل من آخر قراءة (${prev} كم). اكتب السبب، مثل تغيير العداد.`);
     }
     let number = w.number;
@@ -104,7 +104,7 @@ export async function loadWorkOrder(db: Db, actor: Actor, id: string) {
     ...wo, engineer: row.engineer, vehicle: v ?? null, customer: c, technicians: techs, marks, approvals, statement: st ?? null,
     previousOdometer: prev[0] ?? null, editable: isOpen(wo.status),
     lines: lines.map(({ l, tech }) => ({ id: l.id, category: l.category, itemId: l.itemId, variantId: l.variantId, code: l.code, name: l.name, grade: l.grade, unit: l.unit, qtyMilli: l.qtyMilli, unitPricePt: l.unitPricePt, technicianId: l.technicianId, technician: tech, finishedAt: l.finishedAt })),
-    canSeeCost: can(actor.role, "cost.view"),
+    canSeeCost: can(actor, "cost.view"),
   };
 }
 
@@ -176,7 +176,7 @@ export function workOrderRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
     const actor = actorOf(req);
     reply.status(201);
     if (l.variantId) return issueToWorkOrder(db, actor, { workOrderId: id, variantId: l.variantId, qtyMilli: l.qtyMilli, reason: l.reason, lineId: l.id, technicianId: l.technicianId });
-    if (!can(actor.role, "item.manage")) throw new AppError(403, "forbidden", "إضافة بند بسعر حر من صلاحية الإدارة. اختر الصنف من القائمة.");
+    if (!can(actor, "item.manage")) throw new AppError(403, "forbidden", "إضافة بند بسعر حر من صلاحية الإدارة. اختر الصنف من القائمة.");
     if (!l.category || !l.name || l.unitPricePt === undefined) throw new AppError(422, "bad_line", "البند يحتاج نوعًا واسمًا وسعرًا.");
     return db.transaction(async (tx) => {
       await lockOpen(tx, id);
@@ -190,7 +190,7 @@ export function workOrderRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
     const { id, lineId } = LineParams.parse(req.params);
     const p = z.object({ qtyMilli: int.positive().optional(), technicianId: z.uuid().nullable().optional(), finishedAt: z.iso.datetime().nullable().optional(), unitPricePt: int.nonnegative().optional(), reason: z.string().max(300).optional() }).parse(req.body);
     const actor = actorOf(req);
-    if (p.unitPricePt !== undefined && !can(actor.role, "item.manage")) throw new AppError(403, "forbidden", "تغيير السعر من صلاحية الإدارة.");
+    if (p.unitPricePt !== undefined && !can(actor, "item.manage")) throw new AppError(403, "forbidden", "تغيير السعر من صلاحية الإدارة.");
     await db.transaction(async (tx) => {
       const wo = await lockOpen(tx, id);
       const [line] = await tx.select().from(docLines).where(and(eq(docLines.id, lineId), eq(docLines.workOrderId, id), isNull(docLines.archivedAt)));

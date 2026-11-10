@@ -67,7 +67,7 @@ export function alertRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
   /** The top-bar feed. Counts stay small; the full lists live on the alerts screen. */
   app.get("/alerts", { preHandler: auth }, async (req) => {
     const due = await listReminders(db, sql`r.done_at is null`).then((rs) => rs.filter((r) => r.due));
-    if (!can(actorOf(req).role, "customer.viewBalance")) return { reminders: due, debts: [] };
+    if (!can(actorOf(req), "customer.viewBalance")) return { reminders: due, debts: [] };
     const days = Number(await getSetting(db, "alerts.debtDays"));
     const debts = (await db.execute(sql`select c.id, c.name, c.mobile, c.whatsapp, b.balance, b.since
       from (select customer_id, sum(amount_pt) as balance, max(created_at) as since from customer_ledger group by customer_id having sum(amount_pt) > 0) b

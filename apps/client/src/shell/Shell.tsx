@@ -10,7 +10,8 @@ import { dismissFailure } from "../data/local";
 import { useSyncState } from "../data/sync";
 import type { Customer, Item, LookupHit, StatementRow, Supplier, WorkOrderRow } from "../data/types";
 import { CarPlate } from "../screens/common";
-import { daysIn, go, Link, useHotkey, useIsAdmin, useSession } from "../lib";
+import { daysIn, go, Link, useHotkey, useCan, useSession } from "../lib";
+import { can, type Action } from "@jc/core";
 
 const NAV = [
   { to: "/", label: "الرئيسية", icon: LayoutDashboard },
@@ -19,10 +20,10 @@ const NAV = [
   { to: "/customers", label: "العملاء والسيارات", icon: Users },
   { to: "/items", label: "المخزن والأصناف", icon: Package },
   { to: "/alerts", label: "المذكرات والتنبيهات", icon: Bell },
-  { to: "/suppliers", label: "الموردين والمشتريات", icon: Truck, admin: true },
-  { to: "/cash", label: "صندوق الكاش", icon: Wallet, admin: true },
-  { to: "/reports", label: "التقارير", icon: BarChart3, admin: true },
-  { to: "/settings", label: "الإعدادات", icon: Settings, admin: true },
+  { to: "/suppliers", label: "الموردين والمشتريات", icon: Truck, perm: "supplier.manage" as Action },
+  { to: "/cash", label: "صندوق الكاش", icon: Wallet, perm: "cash.manage" as Action },
+  { to: "/reports", label: "التقارير", icon: BarChart3, perm: "report.view" as Action },
+  { to: "/settings", label: "الإعدادات", icon: Settings, perm: "settings.manage" as Action },
 ];
 
 function activeNav(path: string) {
@@ -33,7 +34,7 @@ function activeNav(path: string) {
 }
 
 export function Shell({ path, children }: { path: string; children: ReactNode }) {
-  const isAdmin = useIsAdmin();
+  const { user } = useSession();
   // The digit style chosen in Settings applies on every screen and survives a reload.
   const { setDigits } = useDigits();
   const savedDigits = useSetting<string | null>("display.digits", null);
@@ -49,7 +50,7 @@ export function Shell({ path, children }: { path: string; children: ReactNode })
           <img src="/brand/stacked-colour.svg" alt="Jeep City El Tantawy USA" width={168} height={104} />
         </Link>
         <ul className="rail__nav">
-          {NAV.filter((n) => isAdmin || !n.admin).map((n) => (
+          {NAV.filter((n) => !n.perm || can(user, n.perm)).map((n) => (
             <li key={n.to}>
               <Link to={n.to} className="rail__item" aria-current={current === n.to ? "page" : undefined}>
                 <n.icon aria-hidden />
@@ -188,7 +189,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   const [sel, setSel] = useState(0);
   const [hits, setHits] = useState<Hit[]>([]);
   const f = useFmt();
-  const isAdmin = useIsAdmin();
+  const seeSuppliers = useCan("supplier.manage");
   useEffect(() => {
     const d = ref.current!;
     if (open && !d.open) { d.showModal(); setQ(""); setSel(0); }
@@ -211,7 +212,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
         api<Item[]>(`/items?${qs({ q: text })}`).catch(() => []),
         api<StatementRow[]>(`/statements?${qs({ q: text, limit: 5 })}`).catch(() => []),
         api<WorkOrderRow[]>(`/work-orders?${qs({ q: text, limit: 5 })}`).catch(() => []),
-        isAdmin ? api<Supplier[]>(`/suppliers?${qs({ q: text })}`).catch(() => []) : Promise.resolve([] as Supplier[]),
+        seeSuppliers ? api<Supplier[]>(`/suppliers?${qs({ q: text })}`).catch(() => []) : Promise.resolve([] as Supplier[]),
       ]);
       if (!alive) return;
       const out: Hit[] = [];
@@ -230,7 +231,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
       setSel(0);
     }, 180);
     return () => { alive = false; clearTimeout(t); };
-  }, [q, isAdmin]);
+  }, [q, seeSuppliers]);
 
   const shown = q.trim().length < 2 ? actions : hits;
   const pick = (h?: Hit) => { if (!h) return; onClose(); go(h.to); };

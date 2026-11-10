@@ -5,7 +5,7 @@ import { Button, Dialog, Field, Input, Money, Panel, Textarea, useFmt } from "@j
 import { PageHead, PageState } from "../shell/Shell";
 import { api } from "../data/api";
 import { useAction, useApi, useLongStayDays } from "../data/hooks";
-import { daysIn, Link, useIsAdmin } from "../lib";
+import { daysIn, Link, useCan } from "../lib";
 import type { WorkOrderRow } from "../data/types";
 import { carName, CarPlate, useWaTemplates } from "./common";
 
@@ -25,7 +25,7 @@ export function useWhen() {
 export function Alerts() {
   const f = useFmt();
   const run = useAction();
-  const isAdmin = useIsAdmin();
+  const seeDebts = useCan("customer.viewBalance");
   const when = useWhen();
   const tpl = useWaTemplates().find((t) => t.id === "reminder");
   const feed = useApi<AlertFeed>("/alerts");
@@ -76,7 +76,7 @@ export function Alerts() {
             </tbody>
           </table></div>
         </Panel>
-        {isAdmin && (
+        {seeDebts && (
           <Panel title={`مديونيات أقدم من ${f.n(feed.data?.debtDays ?? 30)} يومًا`} flush>
             <div className="table-wrap"><table className="table table--compact">
               <thead><tr><th>العميل</th><th>آخر حركة</th><th className="num">المديونية</th></tr></thead>

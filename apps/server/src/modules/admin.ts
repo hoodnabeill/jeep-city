@@ -2,7 +2,7 @@
 import { and, desc, eq, gte, isNull, lte, max, sql } from "drizzle-orm";
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
-import { uuidv7 } from "@jc/core";
+import { ACTIONS, can, uuidv7, type Action } from "@jc/core";
 import { audit } from "../audit";
 import { actorOf, hashPassword, requirePerm } from "../auth/auth";
 import type { Db } from "../db/client";
@@ -74,33 +74,37 @@ export function adminRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
     displayName: z.string().trim().min(2).max(60),
     role: z.enum(["admin", "engineer"]),
     password: z.string().min(8, "كلمة المرور 8 حروف على الأقل.").max(128),
+    /** null = the role's defaults. */
+    permissions: z.array(z.enum(ACTIONS as [Action, ...Action[]])).max(ACTIONS.length).nullable().optional(),
   });
   app.get("/users", { preHandler: auth }, async (req) => {
-    const all = await db.select({ id: users.id, username: users.username, displayName: users.displayName, role: users.role, active: users.active }).from(users).where(isNull(users.archivedAt)).orderBy(users.displayName);
-    // Engineers need the list to pick a reception engineer, nothing more.
-    return actorOf(req).role === "admin" ? all : all.filter((u) => u.active).map(({ id, displayName, role }) => ({ id, displayName, role }));
+    const all = await db.select({ id: users.id, username: users.username, displayName: users.displayName, role: users.role, permissions: users.permissions, active: users.active }).from(users).where(isNull(users.archivedAt)).orderBy(users.displayName);
+    // Everyone else needs the list to pick a reception engineer, nothing more.
+    return can(actorOf(req), "settings.manage") ? all : all.filter((u) => u.active).map(({ id, displayName, role }) => ({ id, displayName, role }));
   });
   app.post("/users", { preHandler: admin }, async (req, reply) => {
     const u = UserIn.parse(req.body);
     const [exists] = await db.select({ id: users.id }).from(users).where(eq(users.username, u.username));
     if (exists) throw new AppError(409, "username_taken", "اسم الدخول مستخدم من قبل.");
     const id = uuidv7();
-    await db.insert(users).values({ id, username: u.username, displayName: u.displayName, role: u.role, passwordHash: await hashPassword(u.password), createdBy: actorOf(req).id });
-    await audit(db, actorOf(req), "user.create", "user", id, null, { username: u.username, role: u.role });
+    await db.insert(users).values({ id, username: u.username, displayName: u.displayName, role: u.role, permissions: u.permissions ?? null, passwordHash: await hashPassword(u.password), createdBy: actorOf(req).id });
+    await audit(db, actorOf(req), "user.create", "user", id, null, { username: u.username, role: u.role, permissions: u.permissions ?? null });
     reply.status(201);
     return { id };
   });
   app.patch("/users/:id", { preHandler: admin }, async (req) => {
     const { id } = Id.parse(req.params);
     const p = UserIn.omit({ username: true }).partial().extend({ active: z.boolean().optional() }).parse(req.body);
-    if (id === actorOf(req).id && (p.active === false || p.role === "engineer")) throw new AppError(422, "self_lockout", "لا يمكنك إيقاف حسابك أو تغيير صلاحيتك بنفسك.");
     const [u] = await db.select().from(users).where(eq(users.id, id));
     if (!u) throw notFound("المستخدم");
+    const next = { role: p.role ?? u.role, permissions: p.permissions === undefined ? u.permissions : p.permissions, active: p.active ?? u.active };
+    // Only a user manager can get here, so refusing to lock yourself out keeps at least one manager forever.
+    if (id === actorOf(req).id && !(next.active && can(next, "settings.manage"))) throw new AppError(422, "self_lockout", "لا يمكنك إيقاف حسابك أو سحب صلاحية إدارة المستخدمين من نفسك.");
     await db.update(users).set({
-      displayName: p.displayName ?? u.displayName, role: p.role ?? u.role, active: p.active ?? u.active,
+      displayName: p.displayName ?? u.displayName, role: next.role, permissions: next.permissions, active: next.active,
       passwordHash: p.password ? await hashPassword(p.password) : u.passwordHash, updatedAt: new Date(),
     }).where(eq(users.id, id));
-    await audit(db, actorOf(req), "user.update", "user", id, { displayName: u.displayName, role: u.role, active: u.active }, { ...p, password: p.password ? "(changed)" : undefined });
+    await audit(db, actorOf(req), "user.update", "user", id, { displayName: u.displayName, role: u.role, permissions: u.permissions, active: u.active }, { ...p, password: p.password ? "(changed)" : undefined });
     return { id };
   });
 

@@ -6,6 +6,6 @@ export function NoAccess({ missing }: { missing?: boolean }) {
   return missing ? (
     <EmptyState icon={<MapPinOff />} title="هذه الصفحة غير موجودة" body="ربما تغيّر الرابط. ارجع للرئيسية أو استخدم البحث (Ctrl K)." action={<Button onClick={() => go("/")}>الرئيسية</Button>} />
   ) : (
-    <EmptyState icon={<Lock />} title="هذه الصفحة للإدارة فقط" body="حسابك (مهندس) لا يملك صلاحية فتحها. لو تحتاجها في شغلك اطلب من الإدارة." action={<Button onClick={() => go("/")}>الرئيسية</Button>} />
+    <EmptyState icon={<Lock />} title="ليس لديك صلاحية فتح هذه الصفحة" body="لو تحتاجها في شغلك، اطلب من الإدارة تفعيلها من صلاحياتك في الإعدادات." action={<Button onClick={() => go("/")}>الرئيسية</Button>} />
   );
 }

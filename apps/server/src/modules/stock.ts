@@ -79,7 +79,7 @@ export async function guardOverIssue(tx: Db, actor: Actor, o: { variantId: strin
     await audit(tx, actor, "stock.offline_over_issue", "variant", o.variantId, { availableMilli: o.availableMilli }, detail);
     return;
   }
-  if (!can(actor.role, "stock.issueOverAvailable")) throw new AppError(409, "not_enough_stock", deniedMessage("stock.issueOverAvailable"), { availableMilli: o.availableMilli });
+  if (!can(actor, "stock.issueOverAvailable")) throw new AppError(409, "not_enough_stock", deniedMessage("stock.issueOverAvailable"), { availableMilli: o.availableMilli });
   if (!o.reason?.trim()) throw new AppError(422, "reason_required", "اكتب سبب الصرف بأكثر من المتاح.");
   await audit(tx, actor, "stock.over_issue", "variant", o.variantId, { availableMilli: o.availableMilli }, { ...detail, reason: o.reason });
 }
@@ -120,7 +120,7 @@ export async function issueToWorkOrder(db: Db, actor: Actor, input: { workOrderI
 
 /** Manual adjustment (Admin only, with reason). */
 export async function adjust(db: Db, actor: Actor, input: { variantId: string; qtyMilli: number; reason: string }) {
-  if (!can(actor.role, "stock.adjust")) throw new AppError(403, "forbidden", deniedMessage("stock.adjust"));
+  if (!can(actor, "stock.adjust")) throw new AppError(403, "forbidden", deniedMessage("stock.adjust"));
   if (!input.reason.trim()) throw new AppError(422, "reason_required", "اكتب سبب التسوية.");
   return db.transaction(async (tx) => {
     const r = await move(tx, actor, { variantId: input.variantId, qtyMilli: input.qtyMilli, kind: "adjustment", reason: input.reason });

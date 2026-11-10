@@ -64,7 +64,7 @@ export function conditionRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
     const { id } = z.object({ id: z.uuid() }).parse(req.params);
     const { itemIds } = z.object({ itemIds: z.array(z.uuid()).min(1).max(100) }).parse(req.body);
     const actor = actorOf(req);
-    if (!can(actor.role, "item.manage")) throw new AppError(403, "forbidden", "تحويل الأعمال المقترحة بأسعارها لأمر الشغل من صلاحية الإدارة.");
+    if (!can(actor, "item.manage")) throw new AppError(403, "forbidden", "تحويل الأعمال المقترحة بأسعارها لأمر الشغل من صلاحية الإدارة.");
     const { wo, report } = await load(db, id);
     if (!report) throw new AppError(409, "no_report", "احفظ تقرير الحالة أولًا.");
     if (wo.status !== "open" && wo.status !== "ready") throw new AppError(409, "work_order_closed", "أمر الشغل مقفول.");

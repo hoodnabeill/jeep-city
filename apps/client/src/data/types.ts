@@ -14,7 +14,7 @@ export type Customer = {
   governorate: string | null; address: string | null; notes: string | null; internalNotes: string | null; createdAt: string;
   vehicles: Vehicle[]; balancePt?: number; hasDebt?: boolean;
 };
-export type User = { id: string; displayName: string; username?: string; role: Role; active?: boolean };
+export type User = { id: string; displayName: string; username?: string; role: Role; permissions?: string[] | null; active?: boolean };
 export type Technician = { id: string; name: string; phone: string | null; active: boolean };
 
 export type WorkOrderRow = {

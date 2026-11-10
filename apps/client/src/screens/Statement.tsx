@@ -3,7 +3,7 @@ import { CircleCheck, History, LockKeyhole, MoreHorizontal, PenLine, Plus, Print
 import { Badge, Button, DL, Dialog, Field, IconButton, Input, Menu, Money, Panel, Segmented, Select, Textarea, useFmt, useToast, When } from "@jc/ui";
 import { amountInWords, uuidv7, toPt, type Category, type Discount } from "@jc/core";
 import { PageHead, PageState } from "../shell/Shell";
-import { go, Link, useHotkey, useIsAdmin } from "../lib";
+import { go, Link, useHotkey, useCan } from "../lib";
 import { api, ApiError } from "../data/api";
 import { invalidateAll, useAction, useApi, useSetting } from "../data/hooks";
 import { STATEMENT_KIND, type Customer, type Line, type PaymentMethod, type Statement, type Technician, type WorkOrder } from "../data/types";
@@ -33,7 +33,8 @@ export function StatementScreen({ id }: { id?: string }) {
 }
 
 function StatementView({ saved, wo, customer, methods }: { saved?: Statement; wo?: WorkOrder; customer?: Customer; methods: PaymentMethod[] }) {
-  const isAdmin = useIsAdmin();
+  const canEditSaved = useCan("statement.editSaved");
+  const canCancel = useCan("statement.cancel");
   const vat = useSetting<Vat>("vat", NO_VAT);
   const f = useFmt();
   const toast = useToast();
@@ -126,11 +127,11 @@ function StatementView({ saved, wo, customer, methods }: { saved?: Statement; wo
         sub={saved ? <>تاريخ البيان <span className="num">{f.date(saved.statementDate)}</span>{saved.exitAt && <> · الخروج <When iso={saved.exitAt} /></>}</> : <>من أمر الشغل {f.s(wo!.number)}. الخروج يُسجل عند الحفظ.</>}
         actions={<>
           {saved && c && <WhatsAppButton phone={c.whatsapp ?? c.mobile} size="md" label="إرسال للعميل" text={`مرحبًا ${c.name}، هذا بيان سيارتك رقم ${saved.number} من Jeep City. المطلوب ${f.pt(saved.amountDuePt)} جنيه. شكرًا لزيارتك.`} />}
-          {saved && isAdmin && locked && !cancelled && saved.kind !== "byte" && <Button icon={<PenLine />} onClick={() => setEditing(true)}>تعديل</Button>}
+          {saved && canEditSaved && locked && !cancelled && saved.kind !== "byte" && <Button icon={<PenLine />} onClick={() => setEditing(true)}>تعديل</Button>}
           {saved && <Menu label="المزيد" icon={<MoreHorizontal />} items={[
-            ...(isAdmin ? [{ label: "سجل التعديلات", icon: <History />, onSelect: () => setHistOpen(true) }] : []),
+            ...(canEditSaved ? [{ label: "سجل التعديلات", icon: <History />, onSelect: () => setHistOpen(true) }] : []),
             { label: "إيصال حراري 80 مم", icon: <ReceiptText />, onSelect: () => go(`/print/receipt/${saved.id}`) },
-            ...(isAdmin && !cancelled && saved?.kind !== "byte" ? [{ label: "إلغاء البيان", icon: <XCircle />, danger: true, onSelect: () => setCancelOpen(true) }] : []),
+            ...(canCancel && !cancelled && saved?.kind !== "byte" ? [{ label: "إلغاء البيان", icon: <XCircle />, danger: true, onSelect: () => setCancelOpen(true) }] : []),
           ]} />}
           {locked
             ? <Button variant="primary" icon={<Printer />} kbd="Ctrl P" onClick={() => go(`/print/statement/${saved!.id}`)}>طباعة</Button>
@@ -141,7 +142,7 @@ function StatementView({ saved, wo, customer, methods }: { saved?: Statement; wo
         </>}
       />
 
-      {locked && !isAdmin && (
+      {locked && !canEditSaved && (
         <div className="lock-note"><LockKeyhole /><div><b>هذا البيان محفوظ ولا يمكن تعديله إلا من الإدارة.</b><br /><span className="muted">لو فيه خطأ، اطلب من الإدارة فتحه للتعديل. كل تعديل يُسجل باسم من عدّله ووقته.</span></div></div>
       )}
       {cancelled && saved?.cancelReason && <div className="lock-note" style={{ background: "var(--bad-bg)", color: "var(--bad)", borderColor: "transparent" }}><XCircle /><div><b>بيان ملغي.</b> السبب: {saved.cancelReason}</div></div>}

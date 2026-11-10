@@ -54,17 +54,17 @@ export function authenticate(db: Db, cfg: Config) {
     } catch {
       throw SESSION_ENDED();
     }
-    // Role and active flag come from the database, never only from the token.
-    const [u] = await db.select({ id: users.id, role: users.role, active: users.active }).from(users).where(eq(users.id, sub));
+    // Role, permissions and active flag come from the database, never only from the token.
+    const [u] = await db.select({ id: users.id, role: users.role, permissions: users.permissions, active: users.active }).from(users).where(eq(users.id, sub));
     if (!u || !u.active) throw SESSION_ENDED();
-    req.actor = { id: u.id, role: u.role ?? role, deviceId: (req.headers["x-device-id"] as string) ?? null, ip: req.ip, offline: req.headers["x-sync-replay"] === REPLAY_SECRET };
+    req.actor = { id: u.id, role: u.role ?? role, permissions: u.permissions, deviceId: (req.headers["x-device-id"] as string) ?? null, ip: req.ip, offline: req.headers["x-sync-replay"] === REPLAY_SECRET };
   };
 }
 
 /** preHandler: the server-side permission check (never trust the client). */
 export function requirePerm(action: Action) {
   return async (req: FastifyRequest) => {
-    if (!can(actorOf(req).role, action)) throw new AppError(403, "forbidden", deniedMessage(action));
+    if (!can(actorOf(req), action)) throw new AppError(403, "forbidden", deniedMessage(action));
   };
 }
 
@@ -92,7 +92,7 @@ export function authRoutes(app: FastifyInstance, db: Db, cfg: Config) {
     }
     const tokens = await issueTokens(db, cfg, u, body.deviceId ?? null);
     await audit(db, { id: u.id, ip: req.ip, deviceId: body.deviceId }, "auth.login", "user", u.id);
-    return { ...tokens, user: { id: u.id, name: u.displayName, username: u.username, role: u.role } };
+    return { ...tokens, user: { id: u.id, name: u.displayName, username: u.username, role: u.role, permissions: u.permissions } };
   });
 
   app.post("/auth/refresh", async (req) => {
@@ -121,7 +121,7 @@ export function authRoutes(app: FastifyInstance, db: Db, cfg: Config) {
 
   app.get("/auth/me", { preHandler: auth }, async (req) => {
     const a = actorOf(req);
-    const [u] = await db.select({ id: users.id, name: users.displayName, username: users.username, role: users.role }).from(users).where(eq(users.id, a.id));
+    const [u] = await db.select({ id: users.id, name: users.displayName, username: users.username, role: users.role, permissions: users.permissions }).from(users).where(eq(users.id, a.id));
     return u;
   });
 }

@@ -5,7 +5,7 @@ import {
 } from "@jc/ui";
 import { uuidv7, toPt } from "@jc/core";
 import { PageHead } from "../shell/Shell";
-import { go, useIsAdmin, useSession } from "../lib";
+import { go, useCan, useSession } from "../lib";
 import { api, ApiError } from "../data/api";
 import { qs, useApi } from "../data/hooks";
 import type { History, LookupHit, Technician, User, Vehicle } from "../data/types";
@@ -19,7 +19,7 @@ type Picked = { vehicle: Vehicle; customer: LookupHit["customer"] };
 export function Intake() {
   const f = useFmt();
   const toast = useToast();
-  const isAdmin = useIsAdmin();
+  const canLowerOdo = useCan("odometer.lowerThanPrevious");
   const { user } = useSession();
   const users = useApi<User[]>("/users");
   const technicians = useApi<Technician[]>("/technicians");
@@ -81,7 +81,7 @@ export function Intake() {
       if (Object.keys(e).length) ok = false;
     }
     if (!odo) { setOdoErr("اكتب قراءة العداد الحالية. لا يمكن فتح أمر شغل بدونها."); ok = false; }
-    else if (lower && !isAdmin) { setOdoErr(`القراءة أقل من آخر قراءة (${f.n(prev!)} كم). لو العداد اتغير، اطلب من الإدارة تكمل مع ذكر السبب.`); ok = false; }
+    else if (lower && !canLowerOdo) { setOdoErr(`القراءة أقل من آخر قراءة (${f.n(prev!)} كم). لو العداد اتغير، اطلب من الإدارة تكمل مع ذكر السبب.`); ok = false; }
     else if (lower && !odoReason.trim()) { setOdoErr("اكتب سبب القراءة الأقل (مثال: تغيير العداد)."); ok = false; }
     if (!complaint.trim()) { setComplaintErr("اكتب شكوى العميل أو المطلوب عمله."); ok = false; }
     if (!ok) { odoRef.current?.focus(); return; }
@@ -187,7 +187,7 @@ export function Intake() {
                 <div><span className="odo__label">الفرق منذ آخر زيارة</span><span className={`odo__val ${lower ? "" : "diff"}`} style={lower ? { color: "var(--bad)" } : undefined}>{odo && prev !== undefined ? `${lower ? "−" : "+"}${f.n(Math.abs(odoNum - prev))}` : "—"}</span></div>
               </div>
               {odoErr && <p className="field__error" role="alert" style={{ marginTop: 8 }}>{odoErr}</p>}
-              {lower && isAdmin && <div style={{ marginTop: 10 }}><p className="field__error" style={{ color: "var(--warn)" }}><TriangleAlert />القراءة أقل من السابقة. كإدارة تقدر تكمل مع ذكر السبب.</p><Input value={odoReason} onChange={(e) => { setOdoReason(e.target.value); setOdoErr(""); }} placeholder="السبب، مثل: تغيير العداد" aria-label="سبب القراءة الأقل" /></div>}
+              {lower && canLowerOdo && <div style={{ marginTop: 10 }}><p className="field__error" style={{ color: "var(--warn)" }}><TriangleAlert />القراءة أقل من السابقة. كإدارة تقدر تكمل مع ذكر السبب.</p><Input value={odoReason} onChange={(e) => { setOdoReason(e.target.value); setOdoErr(""); }} placeholder="السبب، مثل: تغيير العداد" aria-label="سبب القراءة الأقل" /></div>}
             </div>
           </Panel>
 

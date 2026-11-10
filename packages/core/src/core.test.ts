@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  amountInWords, can, computeTotals, divRound, egp, egyptMobile, lineValuePt, numberToArabicWords,
+  amountInWords, can, roleDefaults, computeTotals, divRound, egp, egyptMobile, lineValuePt, numberToArabicWords,
   fillTemplate, firstName, toMilli, toPt, normalizePlate, parsePlate, PERMISSIONS, plateKey, plateMatches, unusualPlateLetters, qty, searchKey, uuidv7, whatsappLink, type TotalsLine,
 } from "./index";
 
@@ -176,13 +176,20 @@ describe("normalizers", () => {
 describe("permissions", () => {
   it("engineers cannot edit or cancel a saved statement, see costs, or touch money and settings", () => {
     for (const a of ["statement.editSaved", "statement.cancel", "cost.view", "cash.manage", "report.view", "settings.manage", "item.manage", "stock.issueOverAvailable", "audit.view"] as const)
-      expect(can("engineer", a)).toBe(false);
+      expect(can({ role: "engineer" }, a)).toBe(false);
   });
   it("engineers can do the counter work", () => {
     for (const a of ["workOrder.create", "statement.create", "stock.issue", "customer.manage", "item.view", "stockCount.enter"] as const)
-      expect(can("engineer", a)).toBe(true);
+      expect(can({ role: "engineer" }, a)).toBe(true);
   });
   it("a missing role can do nothing", () => {
     for (const a of Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]) expect(can(undefined, a)).toBe(false);
+  });
+  it("a user's own list replaces the role defaults both ways", () => {
+    const trusted = { role: "engineer" as const, permissions: [...roleDefaults("engineer"), "cost.view"] };
+    expect(can(trusted, "cost.view")).toBe(true);
+    expect(can({ role: "admin", permissions: ["item.view"] }, "cash.manage")).toBe(false);
+    expect(can({ role: "admin", permissions: [] }, "session.use")).toBe(true);
+    expect(can({ role: "admin", permissions: null }, "cash.manage")).toBe(true);
   });
 });

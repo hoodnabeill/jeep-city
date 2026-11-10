@@ -44,6 +44,8 @@ export const users = pgTable("users", {
   role: roleEnum("role").notNull(),
   passwordHash: text("password_hash").notNull(),
   active: boolean("active").notNull().default(true),
+  /** The user's own switches; null = the role's defaults (packages/core permissions.ts). */
+  permissions: jsonb("permissions").$type<string[]>(),
 }, (t) => [uniqueIndex("users_username_uq").on(t.username)]);
 
 export const sessions = pgTable("sessions", {

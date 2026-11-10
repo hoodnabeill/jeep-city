@@ -76,7 +76,7 @@ export function customerRoutes(app: FastifyInstance, db: Db, auth: preHandlerHoo
   app.get("/customers", { preHandler: manage }, async (req) => {
     const q = z.object({ q: z.string().max(80).optional(), debt: z.string().optional() }).parse(req.query);
     const key = q.q ? searchKey(q.q) : "";
-    const showBal = can(actorOf(req).role, "customer.viewBalance");
+    const showBal = can(actorOf(req), "customer.viewBalance");
     const owing = sql`${customers.id} in (select ${customerLedger.customerId} from ${customerLedger} group by ${customerLedger.customerId} having sum(${customerLedger.amountPt}) > 0)`;
     const where = and(isNull(customers.archivedAt), key ? or(ilike(customers.nameKey, `%${key}%`), ilike(customers.mobile, `%${key}%`)) : undefined, q.debt && showBal ? owing : undefined);
     // Most recent visit first; customers never seen in the shop go last. One grouped pass over work orders, not one lookup per customer.
@@ -104,13 +104,13 @@ export function customerRoutes(app: FastifyInstance, db: Db, auth: preHandlerHoo
     const cars = await db.select().from(vehicles).where(and(eq(vehicles.customerId, id), isNull(vehicles.archivedAt)));
     const balancePt = await customerBalancePt(db, id);
     // Engineers see that a debt exists, not the amount or history (D-23).
-    return can(actorOf(req).role, "customer.viewBalance") ? { ...c, vehicles: cars, balancePt } : { ...c, openingBalancePt: undefined, vehicles: cars, hasDebt: balancePt > 0 };
+    return can(actorOf(req), "customer.viewBalance") ? { ...c, vehicles: cars, balancePt } : { ...c, openingBalancePt: undefined, vehicles: cars, hasDebt: balancePt > 0 };
   });
 
   app.post("/customers", { preHandler: manage }, async (req, reply) => {
     const c = CustomerIn.parse(req.body);
     const actor = actorOf(req);
-    if (c.openingBalancePt && !can(actor.role, "customer.viewBalance")) throw new AppError(403, "forbidden", "الرصيد الافتتاحي من صلاحية الإدارة.");
+    if (c.openingBalancePt && !can(actor, "customer.viewBalance")) throw new AppError(403, "forbidden", "الرصيد الافتتاحي من صلاحية الإدارة.");
     const wa = checkPhones(c);
     const id = c.id ?? uuidv7();
     await db.transaction(async (tx) => {

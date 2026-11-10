@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { match, useHashPath, useIsAdmin, useSession } from "./lib";
+import { match, useHashPath, useSession } from "./lib";
+import { can, type Action } from "@jc/core";
 import { Shell } from "./shell/Shell";
 import { Login } from "./screens/Login";
 import { Dashboard } from "./screens/Dashboard";
@@ -22,7 +23,7 @@ import { PrintStatement, PrintJobCard, PrintCondition, PrintReceipt, PrintReport
 import { LabelMaker } from "./screens/Labels";
 import { PublicStatus } from "./screens/PublicStatus";
 
-type Route = { path: string; render: (p: Record<string, string>) => ReactNode; admin?: boolean; bare?: boolean };
+type Route = { path: string; render: (p: Record<string, string>) => ReactNode; perm?: Action; bare?: boolean };
 const routes: Route[] = [
   { path: "/", render: () => <Dashboard /> },
   { path: "/reception", render: () => <Reception /> },
@@ -39,23 +40,22 @@ const routes: Route[] = [
   { path: "/customers", render: () => <Customers /> },
   { path: "/customers/:id", render: (p) => <CustomerFile id={p.id} /> },
   { path: "/cars/:id", render: (p) => <CustomerFile vehicleId={p.id} /> },
-  { path: "/suppliers", render: () => <Suppliers />, admin: true },
-  { path: "/cash", render: () => <CashDrawer />, admin: true },
-  { path: "/reports", render: () => <Reports />, admin: true },
+  { path: "/suppliers", render: () => <Suppliers />, perm: "supplier.manage" },
+  { path: "/cash", render: () => <CashDrawer />, perm: "cash.manage" },
+  { path: "/reports", render: () => <Reports />, perm: "report.view" },
   { path: "/alerts", render: () => <Alerts /> },
-  { path: "/settings", render: () => <SettingsScreen />, admin: true },
+  { path: "/settings", render: () => <SettingsScreen />, perm: "settings.manage" },
   { path: "/print/statement/:id", render: (p) => <PrintStatement id={p.id} />, bare: true },
   { path: "/print/receipt/:id", render: (p) => <PrintReceipt id={p.id} />, bare: true },
   { path: "/print/job-card/:id", render: (p) => <PrintJobCard id={p.id} />, bare: true },
   { path: "/print/condition/:id", render: (p) => <PrintCondition id={p.id} />, bare: true },
   { path: "/print/labels", render: () => <PrintLabels />, bare: true },
-  { path: "/print/report/:id", render: (p) => <PrintReport id={p.id} />, bare: true, admin: true },
+  { path: "/print/report/:id", render: (p) => <PrintReport id={p.id} />, bare: true, perm: "report.view" },
 ];
 
 export function App() {
   const path = useHashPath();
   const { user, ready } = useSession();
-  const isAdmin = useIsAdmin();
   // The customer's status page (QR on prints) opens without a login.
   const pub = match("/s/:token", path);
   if (pub) return <PublicStatus token={pub.token} />;
@@ -65,7 +65,7 @@ export function App() {
     const params = match(r.path, path);
     if (!params) continue;
     if (r.bare) return <>{r.render(params)}</>;
-    return <Shell path={path}>{r.admin && !isAdmin ? <NoAccess /> : r.render(params)}</Shell>;
+    return <Shell path={path}>{r.perm && !can(user, r.perm) ? <NoAccess /> : r.render(params)}</Shell>;
   }
   return <Shell path={path}><NoAccess missing /></Shell>;
 }

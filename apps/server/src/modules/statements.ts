@@ -108,7 +108,7 @@ const activeLines = (tx: Db, statementId: string) => tx.select().from(docLines).
 
 export async function finalizeStatement(db: Db, actor: Actor, raw: unknown) {
   const input = FinalizeIn.parse(raw);
-  if (!can(actor.role, "statement.create")) throw new AppError(403, "forbidden", deniedMessage("statement.create"));
+  if (!can(actor, "statement.create")) throw new AppError(403, "forbidden", deniedMessage("statement.create"));
   return db.transaction(async (tx) => {
     const [wo] = await tx.select().from(workOrders).where(eq(workOrders.id, input.workOrderId)).for("update");
     if (!wo) throw notFound("أمر الشغل");
@@ -142,7 +142,7 @@ const BYTE_LOCKED = "هذا بيان قديم من بايت للأرشيف فق�
 
 export async function editStatement(db: Db, actor: Actor, statementId: string, raw: unknown) {
   // Checked again here (the route checks first): saved statements are locked for engineers.
-  if (!can(actor.role, "statement.editSaved")) throw new AppError(403, "forbidden", deniedMessage("statement.editSaved"));
+  if (!can(actor, "statement.editSaved")) throw new AppError(403, "forbidden", deniedMessage("statement.editSaved"));
   const input = EditIn.parse(raw);
   return db.transaction(async (tx) => {
     const [st] = await tx.select().from(statements).where(eq(statements.id, statementId)).for("update");
@@ -208,7 +208,7 @@ export async function editStatement(db: Db, actor: Actor, statementId: string, r
 
 /* ---------- Cancel (Admin, with reason): nothing is deleted ---------- */
 export async function cancelStatement(db: Db, actor: Actor, statementId: string, raw: unknown) {
-  if (!can(actor.role, "statement.cancel")) throw new AppError(403, "forbidden", deniedMessage("statement.cancel"));
+  if (!can(actor, "statement.cancel")) throw new AppError(403, "forbidden", deniedMessage("statement.cancel"));
   const input = CancelIn.parse(raw);
   return db.transaction(async (tx) => {
     const [st] = await tx.select().from(statements).where(eq(statements.id, statementId)).for("update");
@@ -243,7 +243,7 @@ export async function getStatement(db: Db, actor: Actor, statementId: string) {
   return {
     ...st,
     amountInWords: amountInWords(st.amountDuePt),
-    locked: !can(actor.role, "statement.editSaved"),
+    locked: !can(actor, "statement.editSaved"),
     lines: lines.map(({ stockQtyMilli: _s, ...l }) => l),
     payments: pays,
   };

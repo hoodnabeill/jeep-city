@@ -4,7 +4,7 @@ import {
   Badge, Button, Chip, DL, Dialog, EmptyState, Field, GradeBadge, GRADE_LABEL, IconButton, Input, Money, Panel, Segmented, Select, useFmt, When,
 } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
-import { go, queryParam, useIsAdmin } from "../lib";
+import { go, queryParam, useCan } from "../lib";
 import { api } from "../data/api";
 import { qs, useAction, useApi } from "../data/hooks";
 import type { Grade, Item, Movement, Variant } from "../data/types";
@@ -21,7 +21,8 @@ const isLow = (v: Variant) => v.minQtyMilli > 0 && v.qtyMilli <= v.minQtyMilli;
 
 export function Items() {
   const f = useFmt();
-  const isAdmin = useIsAdmin();
+  const canManage = useCan("item.manage");
+  const seeCost = useCan("cost.view");
   const [type, setType] = useState<"all" | ItemType>("all");
   const [q, setQ] = useState("");
   const [low, setLow] = useState(queryParam("low") === "1");
@@ -31,7 +32,7 @@ export function Items() {
   return (
     <div>
       <PageHead title="المخزن والأصناف" sub={<>{f.n(rows.length)} صنف في هذه القائمة · مخزن رئيسي واحد</>}
-        actions={<><Button icon={<QrCode />} onClick={() => go("/labels")}>ملصقات QR</Button>{isAdmin && <Button variant="primary" icon={<Plus />} onClick={() => setNewOpen(true)}>صنف جديد</Button>}</>} />
+        actions={<><Button icon={<QrCode />} onClick={() => go("/labels")}>ملصقات QR</Button>{canManage && <Button variant="primary" icon={<Plus />} onClick={() => setNewOpen(true)}>صنف جديد</Button>}</>} />
       <div className="toolbar">
         <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="اسم الصنف، الكود، الاسم الإنجليزي أو امسح الباركود" aria-label="بحث في الأصناف" /></div>
         <Segmented label="نوع الصنف" value={type} onChange={setType} options={[{ value: "all", label: "الكل" }, ...(["part", "oil", "material", "labor"] as const).map((t) => ({ value: t, label: TYPE_LABEL[t] }))]} />
@@ -41,7 +42,7 @@ export function Items() {
       <div className="panel">
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>الصنف</th><th>النوع</th><th>الجودات والرصيد</th><th className="num">سعر البيع</th>{isAdmin && <th className="num">التكلفة (متوسط)</th>}<th>المكان</th></tr></thead>
+            <thead><tr><th>الصنف</th><th>النوع</th><th>الجودات والرصيد</th><th className="num">سعر البيع</th>{seeCost && <th className="num">التكلفة (متوسط)</th>}<th>المكان</th></tr></thead>
             <tbody>
               {rows.map((i) => (
                 <tr key={i.id} className="is-clickable" tabIndex={0} onClick={() => go(`/items/${i.id}`)} onKeyDown={(e) => e.key === "Enter" && go(`/items/${i.id}`)}>
@@ -61,7 +62,7 @@ export function Items() {
                     )}
                   </td>
                   <td className="num">{i.variants.map((v) => <span key={v.id} style={{ display: "block" }}><Money pt={v.sellPricePt} cur={false} />{i.type === "oil" && <span className="money__cur">/لتر</span>}</span>)}</td>
-                  {isAdmin && <td className="num muted">{i.trackStock ? i.variants.map((v) => <span key={v.id} style={{ display: "block" }}><Money pt={v.avgCostPt ?? 0} cur={false} /></span>) : "—"}</td>}
+                  {seeCost && <td className="num muted">{i.trackStock ? i.variants.map((v) => <span key={v.id} style={{ display: "block" }}><Money pt={v.avgCostPt ?? 0} cur={false} /></span>) : "—"}</td>}
                   <td className="lat muted">{i.location ?? "—"}</td>
                 </tr>
               ))}
@@ -129,7 +130,9 @@ function ItemDialog({ item, onClose }: { item?: Item; onClose: () => void }) {
 
 export function ItemDetail({ id }: { id: string }) {
   const f = useFmt();
-  const isAdmin = useIsAdmin();
+  const canManage = useCan("item.manage");
+  const canAdjust = useCan("stock.adjust");
+  const seeCost = useCan("cost.view");
   const run = useAction();
   const q = useApi<Item & { movements: Movement[] }>(`/items/${id}`);
   const labelSize = useLabelSize();
@@ -146,14 +149,14 @@ export function ItemDetail({ id }: { id: string }) {
         title={<>{it.nameAr}<span className="lat muted" style={{ fontSize: 18, fontWeight: 600 }}>{it.code}</span></>}
         sub={<>{TYPE_LABEL[it.type]}{it.nameEn && <> · <span className="lat">{it.nameEn}</span></>}</>}
         actions={<>
-          {isAdmin && it.trackStock && <Button icon={<SlidersHorizontal />} onClick={() => setAdj({ qty: "", reason: "" })}>تسوية رصيد</Button>}
-          {isAdmin && <Button variant="primary" icon={<Pencil />} onClick={() => setEdit(true)}>تعديل</Button>}
+          {canAdjust && it.trackStock && <Button icon={<SlidersHorizontal />} onClick={() => setAdj({ qty: "", reason: "" })}>تسوية رصيد</Button>}
+          {canManage && <Button variant="primary" icon={<Pencil />} onClick={() => setEdit(true)}>تعديل</Button>}
         </>} />
       <div className="grid-main-side">
         <div className="stack">
           <Panel title="الجودات والأسعار" sub="كل جودة لها سعرها ورصيدها." flush>
             <table className="table">
-              <thead><tr><th>الجودة</th><th className="num">الرصيد</th><th className="num">الحد الأدنى</th><th className="num">سعر البيع</th>{isAdmin && <th className="num">متوسط التكلفة</th>}{isAdmin && <th className="num">هامش الربح</th>}<th>الباركود</th></tr></thead>
+              <thead><tr><th>الجودة</th><th className="num">الرصيد</th><th className="num">الحد الأدنى</th><th className="num">سعر البيع</th>{seeCost && <th className="num">متوسط التكلفة</th>}{seeCost && <th className="num">هامش الربح</th>}<th>الباركود</th></tr></thead>
               <tbody>
                 {it.variants.map((x, k) => (
                   <tr key={x.id} className={`is-clickable${x.id === v.id ? " is-selected" : ""}`} onClick={() => setG(k)}>
@@ -161,8 +164,8 @@ export function ItemDetail({ id }: { id: string }) {
                     <td className="num" style={{ color: x.qtyMilli <= 0 ? "var(--bad)" : isLow(x) ? "var(--warn)" : undefined, fontWeight: 700 }}>{it.trackStock ? f.n(x.qtyMilli / 1000) : "—"} <span style={{ fontFamily: "var(--font-ar)", fontSize: 12 }}>{it.unit}</span></td>
                     <td className="num">{f.n(x.minQtyMilli / 1000)}</td>
                     <td className="num"><Money pt={x.sellPricePt} cur={false} /></td>
-                    {isAdmin && <td className="num muted"><Money pt={x.avgCostPt ?? 0} cur={false} /></td>}
-                    {isAdmin && <td className="num" style={{ color: "var(--ok)" }}>{x.sellPricePt && x.avgCostPt ? `${f.n(Math.round(((x.sellPricePt - x.avgCostPt) / x.sellPricePt) * 100))}%` : "—"}</td>}
+                    {seeCost && <td className="num muted"><Money pt={x.avgCostPt ?? 0} cur={false} /></td>}
+                    {seeCost && <td className="num" style={{ color: "var(--ok)" }}>{x.sellPricePt && x.avgCostPt ? `${f.n(Math.round(((x.sellPricePt - x.avgCostPt) / x.sellPricePt) * 100))}%` : "—"}</td>}
                     <td className="lat muted">{x.barcode ?? "—"}</td>
                   </tr>
                 ))}
@@ -172,7 +175,7 @@ export function ItemDetail({ id }: { id: string }) {
           {it.trackStock && (
             <Panel title={<>حركة المخزن · {v.grade ? GRADE_LABEL[v.grade] : it.nameAr}</>} sub="الرصيد = مجموع الحركات. لا تُحذف حركة أبدًا." flush>
               <table className="table">
-                <thead><tr><th>الوقت</th><th>الحركة</th><th>السبب</th><th className="num">الكمية</th>{isAdmin && <th className="num">التكلفة</th>}<th>بواسطة</th></tr></thead>
+                <thead><tr><th>الوقت</th><th>الحركة</th><th>السبب</th><th className="num">الكمية</th>{seeCost && <th className="num">التكلفة</th>}<th>بواسطة</th></tr></thead>
                 <tbody>
                   {moves.map((m) => (
                     <tr key={m.id}>
@@ -180,7 +183,7 @@ export function ItemDetail({ id }: { id: string }) {
                       <td className="cell-main">{MOVE_LABEL[m.kind] ?? m.kind}</td>
                       <td className="muted">{m.reason ?? ""}</td>
                       <td className="num" style={{ color: m.qtyMilli < 0 ? "var(--bad)" : "var(--ok)", fontWeight: 700 }}>{m.qtyMilli > 0 ? "+" : "−"}{f.n(Math.abs(m.qtyMilli) / 1000)}</td>
-                      {isAdmin && <td className="num muted">{m.unitCostPt !== undefined ? <Money pt={m.unitCostPt} cur={false} /> : "—"}</td>}
+                      {seeCost && <td className="num muted">{m.unitCostPt !== undefined ? <Money pt={m.unitCostPt} cur={false} /> : "—"}</td>}
                       <td>{m.by ?? "—"}</td>
                     </tr>
                   ))}

@@ -5,7 +5,7 @@ import { Badge, Button, Input, Money, Panel, useFmt } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
 import { api } from "../data/api";
 import { useAction, useApi } from "../data/hooks";
-import { go, useIsAdmin } from "../lib";
+import { go, useCan } from "../lib";
 import type { WorkOrder } from "../data/types";
 import { carName, CarPlate, WhatsAppButton } from "./common";
 
@@ -17,7 +17,7 @@ export type Condition = { saved: boolean; updatedAt: string | null; items: Check
 export function ConditionReport({ id }: { id: string }) {
   const f = useFmt();
   const run = useAction();
-  const isAdmin = useIsAdmin();
+  const canPrice = useCan("item.manage");
   const woq = useApi<WorkOrder>(`/work-orders/${id}`);
   const cq = useApi<Condition>(`/work-orders/${id}/condition`);
   const [checks, setChecks] = useState<CheckItem[] | null>(null);
@@ -77,12 +77,12 @@ export function ConditionReport({ id }: { id: string }) {
               {!recs.length && <p className="hint-line">اكتب عملًا مقترحًا وسعره بجانب أي بند «متابعة» أو «عاجل».</p>}
             </div>
             <div className="pay__sum"><span>إجمالي المختار (تقديري)</span><Money pt={sum} /></div>
-            <Button variant="primary" block icon={<Wrench />} disabled={!picked.length || dirty || !isAdmin} onClick={async () => {
+            <Button variant="primary" block icon={<Wrench />} disabled={!picked.length || dirty || !canPrice} onClick={async () => {
               const r = await run(() => api(`/work-orders/${wo.id}/condition/convert`, { method: "POST", body: { itemIds: picked } }), <>أُضيف {f.n(picked.length)} بنود لأمر الشغل {f.s(wo.number)}.</>);
               if (r) go(`/work-orders/${wo.id}`);
             }}>تحويل المختار لأمر شغل</Button>
-            {!isAdmin && <p className="hint-line">التحويل بأسعار مقترحة من صلاحية الإدارة.</p>}
-            {dirty && isAdmin && <p className="hint-line">احفظ التقرير أولًا.</p>}
+            {!canPrice && <p className="hint-line">التحويل بأسعار مقترحة من صلاحية الإدارة.</p>}
+            {dirty && canPrice && <p className="hint-line">احفظ التقرير أولًا.</p>}
           </div>
         </aside>
       </div>

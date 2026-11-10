@@ -3,7 +3,7 @@ import { firstName, toPt } from "@jc/core";
 import { Banknote, CarFront, Gauge, History as HistoryIcon, Plus, Search, UserPlus } from "lucide-react";
 import { Button, Chip, DL, Dialog, Field, Input, Money, Panel, Select, useFmt, When } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
-import { go, Link, queryParam, useIsAdmin } from "../lib";
+import { go, Link, queryParam, useCan } from "../lib";
 import { api } from "../data/api";
 import { qs, useAction, useApi } from "../data/hooks";
 import type { Customer, History, LedgerRow, PaymentMethod } from "../data/types";
@@ -12,7 +12,7 @@ import { usePlateTypes } from "../data/plates";
 
 export function Customers() {
   const f = useFmt();
-  const isAdmin = useIsAdmin();
+  const seeBalance = useCan("customer.viewBalance");
   const run = useAction();
   const [q, setQ] = useState("");
   const [debt, setDebt] = useState(queryParam("debt") === "1");
@@ -27,13 +27,13 @@ export function Customers() {
         actions={<Button variant="primary" icon={<UserPlus />} onClick={() => setNewOpen(true)}>عميل جديد</Button>} />
       <div className="toolbar">
         <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="الاسم أو الموبايل" aria-label="بحث في العملاء" /></div>
-        {isAdmin && <Chip pressed={debt} onToggle={() => setDebt(!debt)}>عليهم مديونية</Chip>}
+        {seeBalance && <Chip pressed={debt} onToggle={() => setDebt(!debt)}>عليهم مديونية</Chip>}
       </div>
       <PageState loading={list.loading && !list.data} error={list.error} onRetry={list.reload} />
       <div className="panel">
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>العميل</th><th>الموبايل</th><th>السيارات</th><th>عميل منذ</th>{isAdmin && <th className="num">المديونية</th>}<th><span className="sr-only">واتساب</span></th></tr></thead>
+            <thead><tr><th>العميل</th><th>الموبايل</th><th>السيارات</th><th>عميل منذ</th>{seeBalance && <th className="num">المديونية</th>}<th><span className="sr-only">واتساب</span></th></tr></thead>
             <tbody>
               {rows.map((c) => (
                 <tr key={c.id} className="is-clickable" tabIndex={0} onClick={() => go(`/customers/${c.id}`)} onKeyDown={(e) => e.key === "Enter" && go(`/customers/${c.id}`)}>
@@ -41,7 +41,7 @@ export function Customers() {
                   <td className="num" style={{ textAlign: "right" }}>{f.s(c.mobile ?? "—")}</td>
                   <td><span className="row" style={{ gap: 6 }}>{c.vehicles.slice(0, 3).map((v) => <CarPlate key={v.id} v={v} />)}{c.vehicles.length > 3 && <span className="subtle">+{f.n(c.vehicles.length - 3)} سيارة</span>}</span></td>
                   <td><When iso={c.createdAt} time={false} /></td>
-                  {isAdmin && <td className="num">{(c.balancePt ?? 0) > 0 ? <span style={{ color: "var(--warn)", fontWeight: 700 }}><Money pt={c.balancePt!} cur={false} /></span> : <span className="subtle">—</span>}</td>}
+                  {seeBalance && <td className="num">{(c.balancePt ?? 0) > 0 ? <span style={{ color: "var(--warn)", fontWeight: 700 }}><Money pt={c.balancePt!} cur={false} /></span> : <span className="subtle">—</span>}</td>}
                   <td onClick={(e) => e.stopPropagation()}><WhatsAppButton phone={c.whatsapp ?? c.mobile} /></td>
                 </tr>
               ))}
@@ -66,7 +66,8 @@ export function Customers() {
 
 export function CustomerFile({ id, vehicleId }: { id?: string; vehicleId?: string }) {
   const f = useFmt();
-  const isAdmin = useIsAdmin();
+  const seeBalance = useCan("customer.viewBalance");
+  const canCollect = useCan("payment.collectDebt");
   const run = useAction();
   const hist0 = useApi<History>(vehicleId ? `/vehicles/${vehicleId}/history` : null);
   const customerId = id ?? hist0.data?.vehicle.customerId;
@@ -75,7 +76,7 @@ export function CustomerFile({ id, vehicleId }: { id?: string; vehicleId?: strin
   const c = cq.data;
   const activeCar = carId ?? c?.vehicles[0]?.id;
   const hist = useApi<History>(activeCar ? `/vehicles/${activeCar}/history` : null);
-  const ledger = useApi<LedgerRow[]>(isAdmin && customerId ? `/customers/${customerId}/ledger` : null);
+  const ledger = useApi<LedgerRow[]>(seeBalance && customerId ? `/customers/${customerId}/ledger` : null);
   const methods = useApi<PaymentMethod[]>("/payment-methods");
   const [collect, setCollect] = useState<{ methodId: string; amount: string; reference: string } | null>(null);
   const [carOpen, setCarOpen] = useState(false);
@@ -91,16 +92,16 @@ export function CustomerFile({ id, vehicleId }: { id?: string; vehicleId?: strin
         sub={<><span className="num">{f.s(c.mobile ?? "—")}</span>{c.officePhone && <> · مكتب <span className="num">{f.s(c.officePhone)}</span></>}{c.address && <> · {c.address}</>} · عميل منذ <span className="num">{f.date(c.createdAt)}</span></>}
         actions={<>
           <WhatsAppButton phone={c.whatsapp ?? c.mobile} size="md" label="واتساب" />
-          {isAdmin && (c.balancePt ?? 0) > 0 && <Button icon={<Banknote />} onClick={() => setCollect({ methodId: "cash", amount: String((c.balancePt ?? 0) / 100), reference: "" })}>تحصيل مديونية</Button>}
+          {canCollect && (c.balancePt ?? 0) > 0 && <Button icon={<Banknote />} onClick={() => setCollect({ methodId: "cash", amount: String((c.balancePt ?? 0) / 100), reference: "" })}>تحصيل مديونية</Button>}
           <Button variant="primary" icon={<Plus />} onClick={() => go("/intake")}>استقبال سيارة</Button>
         </>} />
 
-      {isAdmin && (c.balancePt ?? 0) > 0 && (
+      {seeBalance && (c.balancePt ?? 0) > 0 && (
         <div className="lock-note" style={{ background: "var(--warn-bg)", borderColor: "transparent", color: "var(--warn)" }}>
           <Banknote /><div><b>على العميل <Money pt={c.balancePt!} /></b><br /><span>من البيانات الآجلة. التفاصيل في كشف الحساب بالأسفل.</span></div>
         </div>
       )}
-      {!isAdmin && c.hasDebt && <div className="lock-note"><Banknote /><div><b>عليه مديونية.</b> <span className="muted">التحصيل من الإدارة.</span></div></div>}
+      {!seeBalance && c.hasDebt && <div className="lock-note"><Banknote /><div><b>عليه مديونية.</b> <span className="muted">التحصيل من الإدارة.</span></div></div>}
 
       <div className="car-switch" role="tablist" aria-label="سيارات العميل">
         {c.vehicles.map((v) => (
@@ -174,7 +175,7 @@ export function CustomerFile({ id, vehicleId }: { id?: string; vehicleId?: strin
         </div>
       ) : <PageState loading={hist.loading} error={hist.error} />}
 
-      {isAdmin && !!ledger.data?.length && (
+      {seeBalance && !!ledger.data?.length && (
         <Panel title="كشف حساب العميل" flush>
           <table className="table table--compact">
             <thead><tr><th>التاريخ</th><th>الحركة</th><th className="num">المبلغ</th><th className="num">الرصيد</th></tr></thead>

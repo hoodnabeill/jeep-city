@@ -2,12 +2,13 @@ import { Bell, Plus, ShoppingCart } from "lucide-react";
 import { Badge, Button, GRADE_LABEL, Money, Panel, useFmt, When } from "@jc/ui";
 import { CarPlate, CarTile, StatusBadge } from "./common";
 import { PageHead, PageState } from "../shell/Shell";
-import { daysIn, go, Link, useIsAdmin } from "../lib";
+import { daysIn, go, Link, useCan } from "../lib";
 import { useApi, useLongStayDays } from "../data/hooks";
 import type { Dashboard as Dash, StatementRow, WorkOrderRow } from "../data/types";
 
 export function Dashboard() {
-  const isAdmin = useIsAdmin();
+  const seeSales = useCan("report.view");
+  const seeDebts = useCan("customer.viewBalance");
   const f = useFmt();
   const dash = useApi<Dash>("/dashboard");
   const shop = useApi<WorkOrderRow[]>("/work-orders?status=in_shop");
@@ -35,7 +36,7 @@ export function Dashboard() {
 
       {d && (
         <div className="strip">
-          {isAdmin ? (
+          {seeSales ? (
             <>
               <div className="strip__cell"><span className="strip__label">مبيعات اليوم</span><span className="strip__value"><Money pt={d.salesTodayPt ?? 0} /></span><span className="strip__note">{f.n(d.statementsToday ?? 0)} بيانات</span></div>
               <Link to="/cash" className="strip__cell"><span className="strip__label">النقدية في الصندوق</span><span className="strip__value">{d.cashInDrawerPt == null ? "—" : <Money pt={d.cashInDrawerPt} />}</span><span className="strip__note">{d.cashInDrawerPt == null ? "اليومية مقفولة" : "اليومية مفتوحة"}</span></Link>
@@ -99,7 +100,7 @@ export function Dashboard() {
                 <span><b>{item.nameAr}</b>{variant.grade ? ` · ${GRADE_LABEL[variant.grade]}` : ""}<br /><span className="muted">متبقي {f.n(variant.qtyMilli / 1000)} {item.unit} · الحد الأدنى {f.n(variant.minQtyMilli / 1000)}</span></span>
               </Link></li>
             ))}
-            {isAdmin && !!d?.customerDebtPt && (
+            {seeDebts && !!d?.customerDebtPt && (
               <li><Link to="/customers?debt=1">
                 <span className="alerts__tag bad">مديونية</span>
                 <span><b>مديونيات العملاء</b> <Money pt={d.customerDebtPt} /><br /><span className="muted">افتح قائمة العملاء المدينين</span></span>

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type AnchorHTMLAttributes, type ReactNode } from "react";
 import { api, ApiError, hasStoredSession, login, logout, onConn, onSessionEnded, refreshSession, rememberUser, setApiUser, type Conn } from "./data/api";
 import { startSync, stopSync } from "./data/sync";
+import { can, type Action } from "@jc/core";
 
 /* ---------- Hash router (the app runs from a file in Tauri, so hash URLs) ---------- */
 export function useHashPath() {
@@ -28,7 +29,7 @@ export function Link({ to, ...rest }: AnchorHTMLAttributes<HTMLAnchorElement> & 
   return <a href={`#${to}`} {...rest} />;
 }
 
-export type SessionUser = { id: string; name: string; username: string; role: "admin" | "engineer" };
+export type SessionUser = { id: string; name: string; username: string; role: "admin" | "engineer"; permissions?: string[] | null };
 type Session = { user: SessionUser | null; ready: boolean; sync: Conn; signIn: (u: string, p: string) => Promise<void>; signOut: () => Promise<void> };
 const SessionCtx = createContext<Session>(null!);
 
@@ -62,7 +63,8 @@ const LAST_USER = "jc.lastUser";
 const saveLastUser = (u: SessionUser) => { try { localStorage.setItem(LAST_USER, JSON.stringify(u)); } catch { /* private mode */ } };
 const lastUser = (): SessionUser | null => { try { return JSON.parse(localStorage.getItem(LAST_USER) ?? "null"); } catch { return null; } };
 export const useSession = () => useContext(SessionCtx);
-export const useIsAdmin = () => useSession().user?.role === "admin";
+/** Hides controls only; the server checks every request. */
+export const useCan = (action: Action) => can(useSession().user, action);
 
 
 export function useHotkey(key: string, fn: (e: KeyboardEvent) => void, deps: unknown[] = []) {

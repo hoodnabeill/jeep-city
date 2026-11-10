@@ -59,8 +59,8 @@ export function routes(app: FastifyInstance, db: Db, cfg: Config) {
   app.post("/stock/adjust", { preHandler: [auth, requirePerm("stock.adjust")] }, async (req) => adjust(db, actorOf(req), Adjust.parse(req.body)));
   app.get("/stock/:id", { preHandler: [auth, requirePerm("item.view")] }, async (req) => {
     const l = await level(db, Id.parse(req.params).id);
-    // Cost is never sent to engineers (D-20).
-    return can(actorOf(req).role, "cost.view") ? { qtyMilli: l.qtyMilli, avgCostPt: l.avgCostPt } : { qtyMilli: l.qtyMilli };
+    // Cost only goes to users with cost.view (D-20).
+    return can(actorOf(req), "cost.view") ? { qtyMilli: l.qtyMilli, avgCostPt: l.avgCostPt } : { qtyMilli: l.qtyMilli };
   });
 
   app.post("/numbers/blocks", { preHandler: [auth, requirePerm("workOrder.create")] }, async (req) => {

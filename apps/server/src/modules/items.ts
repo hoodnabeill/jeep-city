@@ -2,7 +2,7 @@
 import { and, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
-import { can, searchKey, uuidv7 } from "@jc/core";
+import { can, searchKey, uuidv7, type PermissionHolder } from "@jc/core";
 import { audit } from "../audit";
 import { actorOf, requirePerm } from "../auth/auth";
 import type { Db } from "../db/client";
@@ -42,13 +42,13 @@ const ItemIn = z.object({
 type VariantRow = typeof itemVariants.$inferSelect & { qtyMilli: number; avgCostPt?: number };
 
 /** Items + their variants + on-hand; cost only when the caller may see it. */
-export async function loadItems(db: Db, role: "admin" | "engineer", where?: ReturnType<typeof and>) {
+export async function loadItems(db: Db, who: PermissionHolder, where?: ReturnType<typeof and>) {
   const its = await db.select().from(items).where(and(isNull(items.archivedAt), where)).orderBy(items.code).limit(500);
   if (!its.length) return [];
   const vs = await db.select({ v: itemVariants, qtyMilli: stockLevels.qtyMilli, avgCostPt: stockLevels.avgCostPt })
     .from(itemVariants).leftJoin(stockLevels, eq(stockLevels.variantId, itemVariants.id))
     .where(and(inArray(itemVariants.itemId, its.map((i) => i.id)), isNull(itemVariants.archivedAt)));
-  const showCost = can(role, "cost.view");
+  const showCost = can(who, "cost.view");
   return its.map((i) => ({
     ...i,
     variants: vs.filter((r) => r.v.itemId === i.id).map((r): VariantRow => ({
@@ -64,14 +64,14 @@ export function itemRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHan
   app.get("/items", { preHandler: view }, async (req) => {
     const q = z.object({ q: z.string().max(80).optional(), type: z.enum(["part", "oil", "material", "labor", "paint"]).optional(), low: z.enum(["1", "true", "0", "false"]).optional() }).parse(req.query);
     const key = q.q ? searchKey(q.q) : "";
-    let list = await loadItems(db, actorOf(req).role, and(
+    let list = await loadItems(db, actorOf(req), and(
       q.type ? eq(items.type, q.type) : undefined,
       key ? or(ilike(items.nameKey, `%${key}%`), ilike(items.code, `%${q.q!.trim()}%`), ilike(items.nameEn, `%${q.q!.trim()}%`)) : undefined,
     ));
     if (key && !list.length) {
       // A scanner sends the full barcode: resolve it to its item.
       const [v] = await db.select({ itemId: itemVariants.itemId }).from(itemVariants).where(eq(itemVariants.barcode, q.q!.trim()));
-      if (v) list = await loadItems(db, actorOf(req).role, eq(items.id, v.itemId));
+      if (v) list = await loadItems(db, actorOf(req), eq(items.id, v.itemId));
     }
     if (q.low === "1" || q.low === "true") list = list.filter((i) => i.trackStock && i.variants.some((v) => v.minQtyMilli > 0 && v.qtyMilli <= v.minQtyMilli));
     return list;
@@ -98,15 +98,15 @@ export function itemRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHan
   });
 
   app.get("/items/low-stock", { preHandler: view }, async (req) => {
-    const list = await loadItems(db, actorOf(req).role, eq(items.trackStock, true));
+    const list = await loadItems(db, actorOf(req), eq(items.trackStock, true));
     return list.flatMap((i) => i.variants.filter((v) => v.minQtyMilli > 0 && v.qtyMilli <= v.minQtyMilli).map((v) => ({ item: { id: i.id, code: i.code, nameAr: i.nameAr, unit: i.unit }, variant: v })));
   });
 
   app.get("/items/:id", { preHandler: view }, async (req) => {
     const { id } = Id.parse(req.params);
-    const [it] = await loadItems(db, actorOf(req).role, eq(items.id, id));
+    const [it] = await loadItems(db, actorOf(req), eq(items.id, id));
     if (!it) throw notFound("الصنف");
-    const showCost = can(actorOf(req).role, "cost.view");
+    const showCost = can(actorOf(req), "cost.view");
     const moves = await db.select({ m: stockMovements, by: users.displayName }).from(stockMovements).leftJoin(users, eq(users.id, stockMovements.createdBy))
       .where(inArray(stockMovements.variantId, it.variants.map((v) => v.id))).orderBy(desc(stockMovements.createdAt)).limit(100);
     return { ...it, movements: moves.map(({ m, by }) => ({ id: m.id, at: m.createdAt, variantId: m.variantId, kind: m.kind, qtyMilli: m.qtyMilli, refType: m.refType, refId: m.refId, reason: m.reason, by, ...(showCost ? { unitCostPt: m.unitCostPt } : {}) })) };

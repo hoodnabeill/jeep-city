@@ -128,7 +128,7 @@ export function moneyRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
       carsInShop: inShop.reduce((a, r) => a + r.n, 0), readyForPickup: inShop.find((r) => r.status === "ready")?.n ?? 0,
       myOpen: inShop.reduce((a, r) => a + r.mine, 0), lowStock: low[0]?.n ?? 0,
     };
-    if (!can(actor.role, "report.view")) return base;
+    if (!can(actor, "report.view")) return base;
     const [sales] = await db.select({ pt: sql<string>`coalesce(sum(${statements.amountDuePt}), 0)`, n: sql<number>`count(*)::int` }).from(statements).where(and(eq(statements.statementDate, today), eq(statements.status, "final")));
     const s = await openSession(db);
     const [debt] = await db.select({ pt: sql<string>`coalesce(sum(${customerLedger.amountPt}), 0)` }).from(customerLedger);

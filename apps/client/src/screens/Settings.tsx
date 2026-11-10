@@ -3,7 +3,7 @@ import {
   Building2, Cpu, DatabaseBackup, Hash, IdCard, MessageCircle, Percent, Printer, Receipt, ScanLine, Settings2, Users, Wallet, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Badge, Button, Dialog, Field, Input, Panel, Segmented, Select, Switch, Textarea, useDigits, useFmt } from "@jc/ui";
-import type { Category } from "@jc/core";
+import { PERMISSION_INFO, roleDefaults, SECTION_LABEL, type Action, type Category, type Role, type Section } from "@jc/core";
 import { PageHead, PageState } from "../shell/Shell";
 import { api } from "../data/api";
 import { useAction, useApi } from "../data/hooks";
@@ -255,25 +255,45 @@ function DevicesSec({ s }: { s: Settings }) {
   );
 }
 
+type UserDraft = { id?: string; username?: string; displayName: string; role: Role; password?: string; perms: Action[] };
+const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x) => b.includes(x));
+const PERM_ENTRIES = Object.entries(PERMISSION_INFO) as [Action, { section: Section; label: string }][];
+
+/** One switch per permission, grouped by home-screen section. */
+function PermissionSwitches({ value, onChange }: { value: Action[]; onChange: (v: Action[]) => void }) {
+  return (
+    <div className="form-grid" style={{ ["--cols" as string]: 2 }}>
+      {(Object.keys(SECTION_LABEL) as Section[]).map((sec) => (
+        <fieldset key={sec} className="stack" style={{ gap: 8, border: "1px solid var(--line)", borderRadius: 10, padding: "10px 14px", margin: 0 }}>
+          <legend style={{ fontWeight: 700, padding: "0 6px" }}>{SECTION_LABEL[sec]}</legend>
+          {PERM_ENTRIES.filter(([, i]) => i.section === sec).map(([a, i]) => (
+            <Switch key={a} checked={value.includes(a)} onChange={(on) => onChange(on ? [...value, a] : value.filter((x) => x !== a))}>{i.label}</Switch>
+          ))}
+        </fieldset>
+      ))}
+    </div>
+  );
+}
+
 function UsersSec() {
   const run = useAction();
   const users = useApi<User[]>("/users");
   const techs = useApi<Technician[]>("/technicians");
-  const [nu, setNu] = useState<{ username: string; displayName: string; role: "admin" | "engineer"; password: string } | null>(null);
+  const [nu, setNu] = useState<UserDraft | null>(null);
   const [pw, setPw] = useState<{ id: string; name: string; password: string } | null>(null);
   const [tech, setTech] = useState("");
   return (
     <>
-      <Panel title="المستخدمون" flush actions={<Button size="sm" onClick={() => setNu({ username: "", displayName: "", role: "engineer", password: "" })}>مستخدم جديد</Button>}>
+      <Panel title="المستخدمون" flush actions={<Button size="sm" onClick={() => setNu({ username: "", displayName: "", role: "engineer", password: "", perms: roleDefaults("engineer") })}>مستخدم جديد</Button>}>
         <table className="table">
           <thead><tr><th>الاسم</th><th>اسم الدخول</th><th>الصلاحية</th><th>الحالة</th><th /></tr></thead>
           <tbody>
             {(users.data ?? []).map((u) => (
               <tr key={u.id}>
                 <td className="cell-main">{u.displayName}</td><td className="lat">{u.username}</td>
-                <td>{u.role === "admin" ? <Badge tone="ink">إدارة</Badge> : <Badge>مهندس</Badge>}</td>
+                <td>{u.role === "admin" ? <Badge tone="ink">إدارة</Badge> : <Badge>مهندس</Badge>}{u.permissions && <> <Badge tone="outline">صلاحيات مخصصة</Badge></>}</td>
                 <td><Switch checked={!!u.active} onChange={(v) => run(() => api(`/users/${u.id}`, { method: "PATCH", body: { active: v } }), v ? "تم تفعيل الحساب." : "تم إيقاف الحساب.")}>{u.active ? "نشط" : "موقوف"}</Switch></td>
-                <td><Button size="sm" variant="ghost" onClick={() => setPw({ id: u.id, name: u.displayName, password: "" })}>تغيير كلمة المرور</Button></td>
+                <td><Button size="sm" variant="ghost" onClick={() => setNu({ id: u.id, displayName: u.displayName, role: u.role, perms: (u.permissions as Action[] | null | undefined) ?? roleDefaults(u.role) })}>الصلاحيات</Button><Button size="sm" variant="ghost" onClick={() => setPw({ id: u.id, name: u.displayName, password: "" })}>تغيير كلمة المرور</Button></td>
               </tr>
             ))}
           </tbody>
@@ -285,13 +305,22 @@ function UsersSec() {
           <tr key={t.id}><td className="cell-main">{t.name}</td><td><Switch checked={t.active} onChange={(v) => run(() => api(`/technicians/${t.id}`, { method: "PATCH", body: { active: v } }))}>{t.active ? "نشط" : "موقوف"}</Switch></td></tr>
         ))}</tbody></table>
       </Panel>
-      <Dialog open={!!nu} onClose={() => setNu(null)} title="مستخدم جديد"
-        footer={<><Button onClick={() => setNu(null)}>رجوع</Button><Button variant="primary" disabled={!nu || nu.username.length < 3 || nu.displayName.length < 2 || nu.password.length < 8} onClick={async () => { const r = await run(() => api("/users", { method: "POST", body: nu }), "تمت إضافة المستخدم."); if (r) setNu(null); }}>حفظ</Button></>}>
-        {nu && <div className="form-grid" style={{ ["--cols" as string]: 2 }}>
-          <Field label="الاسم" required><Input value={nu.displayName} onChange={(e) => setNu({ ...nu, displayName: e.target.value })} /></Field>
-          <Field label="اسم الدخول" required hint="حروف إنجليزية وأرقام"><Input className="lat" dir="ltr" value={nu.username} onChange={(e) => setNu({ ...nu, username: e.target.value })} /></Field>
-          <Field label="الصلاحية"><Select value={nu.role} onChange={(e) => setNu({ ...nu, role: e.target.value as "admin" | "engineer" })}><option value="engineer">مهندس</option><option value="admin">إدارة</option></Select></Field>
-          <Field label="كلمة المرور" required hint="8 حروف على الأقل"><Input type="password" value={nu.password} onChange={(e) => setNu({ ...nu, password: e.target.value })} /></Field>
+      <Dialog open={!!nu} onClose={() => setNu(null)} title={nu?.id ? `صلاحيات · ${nu.displayName}` : "مستخدم جديد"} wide
+        footer={<><Button onClick={() => setNu(null)}>رجوع</Button><Button variant="primary" disabled={!nu || nu.displayName.length < 2 || (!nu.id && ((nu.username ?? "").length < 3 || (nu.password ?? "").length < 8))} onClick={async () => {
+          const { id, perms, ...rest } = nu!;
+          // Unchanged role defaults are stored as null, so later default changes still reach this user.
+          const permissions = sameSet(perms, roleDefaults(nu!.role)) ? null : perms;
+          const r = await run(() => id ? api(`/users/${id}`, { method: "PATCH", body: { displayName: rest.displayName, role: rest.role, permissions } }) : api("/users", { method: "POST", body: { ...rest, permissions } }), id ? "تم حفظ الصلاحيات." : "تمت إضافة المستخدم.");
+          if (r) setNu(null);
+        }}>حفظ</Button></>}>
+        {nu && <div className="stack" style={{ gap: 16 }}>
+          <div className="form-grid" style={{ ["--cols" as string]: nu.id ? 2 : 4 }}>
+            <Field label="الاسم" required><Input value={nu.displayName} onChange={(e) => setNu({ ...nu, displayName: e.target.value })} /></Field>
+            {!nu.id && <Field label="اسم الدخول" required hint="حروف إنجليزية وأرقام"><Input className="lat" dir="ltr" value={nu.username} onChange={(e) => setNu({ ...nu, username: e.target.value })} /></Field>}
+            <Field label="نوع الحساب" hint="يختار الصلاحيات الأساسية، وتقدر تعدلها تحت"><Select value={nu.role} onChange={(e) => { const role = e.target.value as Role; setNu({ ...nu, role, perms: roleDefaults(role) }); }}><option value="engineer">مهندس</option><option value="admin">إدارة</option></Select></Field>
+            {!nu.id && <Field label="كلمة المرور" required hint="8 حروف على الأقل"><Input type="password" value={nu.password} onChange={(e) => setNu({ ...nu, password: e.target.value })} /></Field>}
+          </div>
+          <PermissionSwitches value={nu.perms} onChange={(perms) => setNu({ ...nu, perms })} />
         </div>}
       </Dialog>
       <Dialog open={!!pw} onClose={() => setPw(null)} title={`كلمة مرور جديدة · ${pw?.name ?? ""}`}
