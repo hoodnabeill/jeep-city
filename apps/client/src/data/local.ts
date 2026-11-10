@@ -3,7 +3,7 @@
  * Online, screens read the server. Offline, reads come from here, and the counter's writes (receive a car,
  * add or change lines, hand over with a statement) are queued and applied to the local copy at once.
  */
-import { normalizePlate, parsePlate, plateKey, searchKey, uuidv7, westernDigits, plateMatches } from "@jc/core";
+import { normalizePlate, parsePlate, plateKey, searchKey, uuidv7, westernDigits, plateMatches, lookupRank } from "@jc/core";
 import { kvClear, kvGet, kvSet } from "./store";
 import type { CatalogHit, History, Line, LookupHit, WorkOrder, WorkOrderRow } from "./types";
 
@@ -158,7 +158,8 @@ function lookup(q: string): LookupHit[] {
     return ch.includes(text.toUpperCase()) || (text.length >= 8 && ch.length >= 5 && text.toUpperCase().endsWith(ch))
       || (plate && plateMatches(text, { letters: String(v.plateLetters ?? ""), digits: String(v.plateDigits ?? "") }))
       || String(c?.nameKey ?? "").includes(key) || String(c?.mobile ?? "").replace(/\D/g, "").includes(key);
-  }).slice(0, 30).map((v) => {
+  }).map((v) => ({ v, rank: lookupRank(text, { plateLetters: String(v.plateLetters ?? ""), plateDigits: String(v.plateDigits ?? ""), chassis: String(v.chassis ?? "") }, String(customers.get(v.customerId)?.nameKey ?? "")) }))
+    .sort((a, b) => a.rank - b.rank).slice(0, 30).map(({ v }) => {
     const c = customers.get(v.customerId);
     return { vehicle: v as LookupHit["vehicle"], customer: { id: v.customerId, name: c?.name ?? "", mobile: c?.mobile ?? null, whatsapp: c?.whatsapp ?? null } };
   });

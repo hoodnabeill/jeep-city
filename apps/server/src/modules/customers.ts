@@ -2,7 +2,7 @@
 import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
-import { can, egyptMobile, normalizePlate, parsePlate, plateKey, searchKey, uuidv7, westernDigits } from "@jc/core";
+import { can, egyptMobile, normalizePlate, parsePlate, plateKey, searchKey, uuidv7, westernDigits, lookupRank } from "@jc/core";
 import { audit } from "../audit";
 import { actorOf, requirePerm } from "../auth/auth";
 import type { Db } from "../db/client";
@@ -66,22 +66,32 @@ export async function lookup(db: Db, q: string) {
       plate?.letters ? ilike(vehicles.plateKey, `%${searchKey(plate.letters)}%${plate.digits}%`) : undefined,
       plate && !plate.letters && plate.digits ? ilike(vehicles.plateDigits, `%${plate.digits}%`) : undefined,
       ilike(customers.nameKey, `%${key}%`), ilike(customers.mobile, `%${key}%`),
-    ))).limit(30);
-  return vMatch.map(({ v, c }) => ({ vehicle: v, customer: { id: c.id, name: c.name, mobile: c.mobile, whatsapp: c.whatsapp } }));
+    )))
+    // Exact plate numbers first so they survive the cap, then the shared ranking decides the order.
+    .orderBy(sql`case when ${vehicles.plateDigits} = ${plate?.digits ?? ""} then 0 else 1 end`, desc(vehicles.updatedAt)).limit(300);
+  return vMatch
+    .map((r) => ({ ...r, rank: lookupRank(text, r.v, r.c.nameKey ?? "") }))
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 30)
+    .map(({ v, c }) => ({ vehicle: v, customer: { id: c.id, name: c.name, mobile: c.mobile, whatsapp: c.whatsapp } }));
 }
 
 export function customerRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHandler) {
   const manage = [auth, requirePerm("customer.manage")];
 
   app.get("/customers", { preHandler: manage }, async (req) => {
-    const q = z.object({ q: z.string().max(80).optional(), debt: z.string().optional() }).parse(req.query);
+    const q = z.object({ q: z.string().max(80).optional(), debt: z.string().optional(), limit: z.coerce.number().int().min(1).max(20000).default(300) }).parse(req.query);
     const key = q.q ? searchKey(q.q) : "";
     const showBal = can(actorOf(req), "customer.viewBalance");
     const owing = sql`${customers.id} in (select ${customerLedger.customerId} from ${customerLedger} group by ${customerLedger.customerId} having sum(${customerLedger.amountPt}) > 0)`;
-    const where = and(isNull(customers.archivedAt), key ? or(ilike(customers.nameKey, `%${key}%`), ilike(customers.mobile, `%${key}%`)) : undefined, q.debt && showBal ? owing : undefined);
+    // A customer is also found by any of their cars: plate (letters and/or number) or chassis.
+    const plate = q.q ? parsePlate(westernDigits(q.q)) : null;
+    const platePattern = plate?.letters ? `%${searchKey(plate.letters)}%${plate.digits}%` : plate?.digits ? `%${plate.digits}%` : null;
+    const byCar = key ? sql`exists (select 1 from ${vehicles} v where v.customer_id = ${customers.id} and v.archived_at is null and (${platePattern ? sql`v.plate_key ilike ${platePattern} or ` : sql``}upper(v.chassis) like ${"%" + westernDigits(q.q!).trim().toUpperCase() + "%"}))` : undefined;
+    const where = and(isNull(customers.archivedAt), key ? or(ilike(customers.nameKey, `%${key}%`), ilike(customers.mobile, `%${key}%`), byCar) : undefined, q.debt && showBal ? owing : undefined);
     // Most recent visit first; customers never seen in the shop go last. One grouped pass over work orders, not one lookup per customer.
     const lv = db.select({ customerId: workOrders.customerId, last: sql<Date>`max(${workOrders.enteredAt})`.as("last_visit") }).from(workOrders).groupBy(workOrders.customerId).as("lv");
-    const list = (await db.select({ c: customers }).from(customers).leftJoin(lv, eq(lv.customerId, customers.id)).where(where).orderBy(sql`${lv.last} desc nulls last`, desc(customers.createdAt)).limit(300)).map((r) => r.c);
+    const list = (await db.select({ c: customers }).from(customers).leftJoin(lv, eq(lv.customerId, customers.id)).where(where).orderBy(sql`${lv.last} desc nulls last`, desc(customers.createdAt)).limit(q.limit)).map((r) => r.c);
     const [{ total }] = await db.select({ total: count() }).from(customers).where(where);
     const ids = list.map((c) => c.id);
     const cars = ids.length ? await db.select().from(vehicles).where(and(inArray(vehicles.customerId, ids), isNull(vehicles.archivedAt))) : [];

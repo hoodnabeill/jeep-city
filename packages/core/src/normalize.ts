@@ -59,6 +59,27 @@ export function plateMatches(query: string, p: Plate): boolean {
 }
 
 /**
+ * How well a car matches a quick search; lower is better. Used to order results so the car the user meant comes first:
+ * the exact plate, then the same plate number with any letters, the chassis, plates starting with the number,
+ * plates containing it, then owner name and phone.
+ */
+export function lookupRank(query: string, car: { plateLetters?: string | null; plateDigits?: string | null; chassis?: string | null }, ownerNameKey = ""): number {
+  const text = westernDigits(query).trim(), up = text.toUpperCase();
+  const q = parsePlate(text);
+  const digits = car.plateDigits ?? "", letters = searchKey(car.plateLetters ?? ""), qLetters = q ? searchKey(q.letters) : "";
+  const chassis = (car.chassis ?? "").toUpperCase();
+  const lettersOk = letters.includes(qLetters);
+  if (q?.digits && digits === q.digits && qLetters && letters === qLetters) return 0;
+  if (q?.digits && digits === q.digits && lettersOk) return 1;
+  if (chassis && (chassis === up || (up.length >= 8 && chassis.length >= 5 && up.endsWith(chassis)))) return 2;
+  if (q?.digits && digits.startsWith(q.digits) && lettersOk) return 3;
+  if (q && plateMatches(text, { letters: car.plateLetters ?? "", digits })) return 4;
+  if (chassis.includes(up)) return 5;
+  if (ownerNameKey.includes(searchKey(text))) return 6;
+  return 7;
+}
+
+/**
  * Egyptian phone → international digits for wa.me ("201001234567"), or null when it is not an Egyptian mobile.
  * Accepts spaces, dashes, brackets, "+20", "0020", Arabic-Indic digits.
  */

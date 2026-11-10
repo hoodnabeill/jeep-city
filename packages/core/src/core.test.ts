@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  amountInWords, can, roleDefaults, computeTotals, divRound, egp, egyptMobile, lineValuePt, numberToArabicWords,
+  amountInWords, can, lookupRank, roleDefaults, computeTotals, divRound, egp, egyptMobile, lineValuePt, numberToArabicWords,
   fillTemplate, firstName, toMilli, toPt, normalizePlate, parsePlate, PERMISSIONS, plateKey, plateMatches, unusualPlateLetters, qty, searchKey, uuidv7, whatsappLink, type TotalsLine,
 } from "./index";
 
@@ -191,5 +191,17 @@ describe("permissions", () => {
     expect(can({ role: "admin", permissions: ["item.view"] }, "cash.manage")).toBe(false);
     expect(can({ role: "admin", permissions: [] }, "session.use")).toBe(true);
     expect(can({ role: "admin", permissions: null }, "cash.manage")).toBe(true);
+  });
+});
+
+describe("quick search ranking", () => {
+  it("puts the exact plate number before plates that only contain it", () => {
+    const exact = lookupRank("123", { plateLetters: "ص ط ب", plateDigits: "123" });
+    const longer = lookupRank("123", { plateLetters: "م ر", plateDigits: "1234" });
+    const inside = lookupRank("123", { plateLetters: "م ر", plateDigits: "51230" });
+    expect(exact).toBeLessThan(longer);
+    expect(longer).toBeLessThan(inside);
+    expect(lookupRank("123 صطب", { plateLetters: "ص ط ب", plateDigits: "123" })).toBe(0);
+    expect(lookupRank("123 صطب", { plateLetters: "ن ج", plateDigits: "123" })).toBeGreaterThan(0);
   });
 });

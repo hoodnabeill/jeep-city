@@ -11,7 +11,9 @@ export function Statements() {
   const f = useFmt();
   const [q, setQ] = useState("");
   const [st, setSt] = useState<"all" | "paid" | "credit" | "cancelled">("all");
-  const list = useApi<StatementRow[]>(`/statements?${qs({ q: q.trim().length >= 2 ? q.trim() : undefined, status: st === "cancelled" ? "cancelled" : undefined })}`);
+  const [all, setAll] = useState(false);
+  const list = useApi<StatementRow[]>(`/statements?${qs({ q: q.trim().length >= 2 ? q.trim() : undefined, status: st === "cancelled" ? "cancelled" : undefined, limit: all ? 20000 : undefined })}`);
+  const capped = !all && (list.data?.length ?? 0) >= 200;
   const methods = useApi<PaymentMethod[]>("/payment-methods");
   const label = (id: string) => methods.data?.find((m) => m.id === id)?.label ?? id;
   const isCredit = (id: string) => !!methods.data?.find((m) => m.id === id)?.isCredit;
@@ -19,7 +21,7 @@ export function Statements() {
   const total = rows.filter((s) => s.status !== "cancelled").reduce((a, s) => a + s.amountDuePt, 0);
   return (
     <div>
-      <PageHead title="بيانات العملاء" sub={(list.data?.length ?? 0) >= 200
+      <PageHead title="بيانات العملاء" sub={capped
         ? <>آخر {f.n(rows.length)} بيان · الإجمالي <Money pt={total} /> · ابحث برقم البيان أو العميل أو اللوحة لأي بيان أقدم</>
         : <>{f.n(rows.length)} بيانات · الإجمالي <Money pt={total} /></>}
         actions={<Button variant="primary" icon={<Plus />} onClick={() => go("/reception")}>بيان من أمر شغل</Button>} />
@@ -50,6 +52,12 @@ export function Statements() {
             </tbody>
           </table>
         </div>
+        {capped && !list.loading && (
+          <div className="row" style={{ justifyContent: "center", padding: 12 }}>
+            <Button onClick={() => setAll(true)}>عرض كل البيانات</Button>
+            <span className="hint-line">ممكن ياخد كام ثانية.</span>
+          </div>
+        )}
         {list.data && rows.length === 0 && <EmptyState icon={<SearchX />} title="لا توجد بيانات بهذا البحث" body="جرّب رقم البيان كاملًا أو جزءًا من اسم العميل." />}
       </div>
     </div>

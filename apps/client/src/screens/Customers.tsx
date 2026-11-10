@@ -18,15 +18,16 @@ export function Customers() {
   const [debt, setDebt] = useState(queryParam("debt") === "1");
   const [newOpen, setNewOpen] = useState(false);
   const [nc, setNc] = useState({ name: "", mobile: "", address: "" });
-  const list = useApi<{ rows: Customer[]; total: number }>(`/customers?${qs({ q: q.trim() || undefined, debt: debt ? "1" : undefined })}`);
+  const [all, setAll] = useState(false);
+  const list = useApi<{ rows: Customer[]; total: number }>(`/customers?${qs({ q: q.trim() || undefined, debt: debt ? "1" : undefined, limit: all ? 20000 : undefined })}`);
   const rows = list.data?.rows ?? [];
   const total = list.data?.total ?? 0;
   return (
     <div>
-      <PageHead title="العملاء والسيارات" sub={total > rows.length ? <>آخر {f.n(rows.length)} عميل زاروا الورشة من {f.n(total)} · ابحث بالاسم أو الموبايل للوصول لأي عميل</> : <>{f.n(total)} عميل</>}
+      <PageHead title="العملاء والسيارات" sub={total > rows.length ? <>آخر {f.n(rows.length)} عميل زاروا الورشة من {f.n(total)} · ابحث بالاسم أو الموبايل أو اللوحة أو الشاسيه</> : <>{f.n(total)} عميل</>}
         actions={<Button variant="primary" icon={<UserPlus />} onClick={() => setNewOpen(true)}>عميل جديد</Button>} />
       <div className="toolbar">
-        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="الاسم أو الموبايل" aria-label="بحث في العملاء" /></div>
+        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="الاسم، الموبايل، اللوحة أو الشاسيه" aria-label="بحث في العملاء" /></div>
         {seeBalance && <Chip pressed={debt} onToggle={() => setDebt(!debt)}>عليهم مديونية</Chip>}
       </div>
       <PageState loading={list.loading && !list.data} error={list.error} onRetry={list.reload} />
@@ -49,6 +50,12 @@ export function Customers() {
           </table>
         </div>
       </div>
+      {total > rows.length && !list.loading && (
+        <div className="row" style={{ justifyContent: "center", marginTop: 12 }}>
+          <Button onClick={() => setAll(true)}>عرض كل العملاء ({f.n(total)})</Button>
+          <span className="hint-line">ممكن ياخد كام ثانية.</span>
+        </div>
+      )}
       <Dialog open={newOpen} onClose={() => setNewOpen(false)} title="عميل جديد"
         footer={<><Button onClick={() => setNewOpen(false)}>رجوع</Button><Button variant="primary" disabled={nc.name.trim().length < 2} onClick={async () => {
           const r = await run(() => api<{ id: string }>("/customers", { method: "POST", body: { name: nc.name, mobile: nc.mobile || null, whatsapp: nc.mobile || null, address: nc.address || null } }), "تمت إضافة العميل.");

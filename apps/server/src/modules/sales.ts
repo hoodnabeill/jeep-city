@@ -19,7 +19,7 @@ import { int } from "../http";
 
 export function salesRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHandler) {
   app.get("/statements", { preHandler: auth }, async (req) => {
-    const q = z.object({ q: z.string().max(60).optional(), status: z.enum(["final", "cancelled"]).optional(), kind: z.enum(["statement", "direct_sale", "byte"]).optional(), from: z.iso.date().optional(), to: z.iso.date().optional(), customerId: z.uuid().optional(), limit: z.coerce.number().int().min(1).max(500).default(200) }).parse(req.query);
+    const q = z.object({ q: z.string().max(60).optional(), status: z.enum(["final", "cancelled"]).optional(), kind: z.enum(["statement", "direct_sale", "byte"]).optional(), from: z.iso.date().optional(), to: z.iso.date().optional(), customerId: z.uuid().optional(), limit: z.coerce.number().int().min(1).max(20000).default(200) }).parse(req.query);
     const key = q.q ? searchKey(q.q) : "";
     const rows = await db.select({ s: statements, c: { id: customers.id, name: customers.name }, v: { id: vehicles.id, plateType: vehicles.plateType, plateLetters: vehicles.plateLetters, plateDigits: vehicles.plateDigits }, woNumber: workOrders.number, by: users.displayName })
       .from(statements).innerJoin(customers, eq(customers.id, statements.customerId)).leftJoin(vehicles, eq(vehicles.id, statements.vehicleId))
