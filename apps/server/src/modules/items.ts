@@ -1,5 +1,5 @@
 /** Items with grade variants, stock levels, movements, packages. Cost and profit are Admin-only (D-20). */
-import { and, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { z } from "zod";
 import { can, searchKey, uuidv7, type PermissionHolder } from "@jc/core";
@@ -62,10 +62,11 @@ export function itemRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHan
   const manage = [auth, requirePerm("item.manage")];
 
   app.get("/items", { preHandler: view }, async (req) => {
-    const q = z.object({ q: z.string().max(80).optional(), type: z.enum(["part", "oil", "material", "labor", "paint"]).optional(), low: z.enum(["1", "true", "0", "false"]).optional() }).parse(req.query);
+    const q = z.object({ q: z.string().max(80).optional(), type: z.enum(["part", "oil", "material", "labor", "paint"]).optional(), low: z.enum(["1", "true", "0", "false"]).optional(), location: z.string().trim().max(60).optional() }).parse(req.query);
     const key = q.q ? searchKey(q.q) : "";
     let list = await loadItems(db, actorOf(req), and(
       q.type ? eq(items.type, q.type) : undefined,
+      q.location ? eq(items.location, q.location) : undefined,
       key ? or(ilike(items.nameKey, `%${key}%`), ilike(items.code, `%${q.q!.trim()}%`), ilike(items.nameEn, `%${q.q!.trim()}%`)) : undefined,
     ));
     if (key && !list.length) {
@@ -97,6 +98,10 @@ export function itemRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHan
     return rows;
   });
 
+  /** Shelf names in use, for the shelf filter. */
+  app.get("/items/locations", { preHandler: view }, async () =>
+    (await db.selectDistinct({ l: items.location }).from(items).where(and(isNull(items.archivedAt), sql`${items.location} is not null and ${items.location} <> ''`)).orderBy(items.location)).map((r) => r.l));
+
   app.get("/items/low-stock", { preHandler: view }, async (req) => {
     const list = await loadItems(db, actorOf(req), eq(items.trackStock, true));
     return list.flatMap((i) => i.variants.filter((v) => v.minQtyMilli > 0 && v.qtyMilli <= v.minQtyMilli).map((v) => ({ item: { id: i.id, code: i.code, nameAr: i.nameAr, unit: i.unit }, variant: v })));
@@ -109,7 +114,15 @@ export function itemRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHan
     const showCost = can(actorOf(req), "cost.view");
     const moves = await db.select({ m: stockMovements, by: users.displayName }).from(stockMovements).leftJoin(users, eq(users.id, stockMovements.createdBy))
       .where(inArray(stockMovements.variantId, it.variants.map((v) => v.id))).orderBy(desc(stockMovements.createdAt)).limit(100);
-    return { ...it, movements: moves.map(({ m, by }) => ({ id: m.id, at: m.createdAt, variantId: m.variantId, kind: m.kind, qtyMilli: m.qtyMilli, refType: m.refType, refId: m.refId, reason: m.reason, by, ...(showCost ? { unitCostPt: m.unitCostPt } : {}) })) };
+    // Consumption = parts that left for work orders and direct sales, net of what came back.
+    const used = sql`${stockMovements.kind} in ('issue_out', 'issue_return', 'sale_out', 'sales_return')`;
+    const stats = await db.select({
+      variantId: stockMovements.variantId,
+      used30Milli: sql<string>`coalesce(-sum(${stockMovements.qtyMilli}) filter (where ${used} and ${stockMovements.createdAt} >= now() - interval '30 days'), 0)`,
+      used90Milli: sql<string>`coalesce(-sum(${stockMovements.qtyMilli}) filter (where ${used} and ${stockMovements.createdAt} >= now() - interval '90 days'), 0)`,
+      lastUsedAt: sql<string | null>`max(${stockMovements.createdAt}) filter (where ${stockMovements.kind} in ('issue_out', 'sale_out'))`,
+    }).from(stockMovements).where(inArray(stockMovements.variantId, it.variants.map((v) => v.id))).groupBy(stockMovements.variantId);
+    return { ...it, stats: stats.map((s) => ({ variantId: s.variantId, used30Milli: Number(s.used30Milli), used90Milli: Number(s.used90Milli), lastUsedAt: s.lastUsedAt })), movements: moves.map(({ m, by }) => ({ id: m.id, at: m.createdAt, variantId: m.variantId, kind: m.kind, qtyMilli: m.qtyMilli, refType: m.refType, refId: m.refId, reason: m.reason, by, ...(showCost ? { unitCostPt: m.unitCostPt } : {}) })) };
   });
 
   app.post("/items", { preHandler: manage }, async (req, reply) => {

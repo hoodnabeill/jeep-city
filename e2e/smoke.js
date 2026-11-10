@@ -69,7 +69,7 @@ async function resetKarim() {
 
     const sections = {
       "/board": "الاستقبال", "/reception": "الاستقبال", "/statements": "الاستقبال", "/customers": "الاستقبال", "/alerts": "الاستقبال",
-      "/items": "المخزن", "/labels": "المخزن", "/suppliers": "المخزن", "/cash": "الحسابات والتقارير", "/reports": "الحسابات والتقارير", "/partners": "الحسابات والتقارير", "/users": "المستخدمين",
+      "/items": "المخزن", "/stock-counts": "المخزن", "/labels": "المخزن", "/suppliers": "المخزن", "/cash": "الحسابات والتقارير", "/reports": "الحسابات والتقارير", "/partners": "الحسابات والتقارير", "/users": "المستخدمين",
     };
     for (const [hash, sec] of Object.entries(sections)) {
       await open(a.page, hash);
@@ -123,6 +123,33 @@ async function resetKarim() {
     check((await a.page.locator("main tr", { hasText: "سحب اختبار" }).count()) === before + 1, "partners: the withdrawal shows in the month list");
     await a.page.screenshot({ path: path.join(SHOTS, "partners.png"), fullPage: true });
 
+    /* Inventory: item card analysis, shelf filter, and a stock count with no differences. */
+    await open(a.page, "/items");
+    check(await a.page.getByRole("combobox", { name: "مكان التخزين" }).isVisible(), "items: shelf filter is there");
+    await a.page.locator("main tbody tr.is-clickable").filter({ hasNotText: "خدمة" }).first().click();
+    await a.page.waitForURL((u) => u.hash.startsWith("#/items/"));
+    await a.page.getByText("تحليل الصنف").waitFor();
+    check(await a.page.getByRole("columnheader", { name: "الرصيد بعدها" }).isVisible().catch(() => false) || !(await a.page.getByText("حركة المخزن").count()), "item card: running balance column");
+    const itemName = await a.page.locator("main h1").evaluate((h) => h.firstChild.textContent.trim());
+    const sysQty = (await a.page.locator("main table").first().locator("tbody tr").first().locator("td").nth(1).innerText()).split(" ")[0].trim();
+    await open(a.page, "/stock-counts");
+    await a.page.getByRole("button", { name: "جرد جديد" }).click();
+    await a.page.locator("dialog[open]").getByRole("textbox", { name: "اسم الجرد" }).fill("جرد اختبار e2e");
+    await a.page.locator("dialog[open]").getByRole("button", { name: "ابدأ الجرد" }).click();
+    await a.page.waitForURL((u) => /^#\/stock-counts\/[0-9a-f-]{36}$/.test(u.hash));
+    await a.page.getByRole("textbox", { name: "بحث عن صنف للجرد" }).fill(itemName.slice(0, 12));
+    const qtyBox = a.page.getByRole("textbox", { name: `عدد ${itemName}` }).first();
+    await qtyBox.waitFor({ timeout: 8000 });
+    await qtyBox.fill(sysQty.replace(/[^0-9.]/g, "") || "0");
+    await qtyBox.press("Enter");
+    await a.page.getByRole("textbox", { name: `المعدود من ${itemName}` }).first().waitFor({ timeout: 8000 });
+    check((await a.page.getByText("فيها فرق: 0").count()) === 1, "count: counting the system quantity shows no difference");
+    await a.page.getByRole("button", { name: "اعتماد الفروق" }).click();
+    await a.page.locator("dialog[open]").getByRole("button", { name: "اعتماد" }).click();
+    await a.page.getByText("اتعتمد").first().waitFor({ timeout: 8000 });
+    check(true, "count: approved");
+    await a.page.screenshot({ path: path.join(SHOTS, "count.png"), fullPage: true });
+
     check(a.errors.length === 0, `admin: no page errors${a.errors.length ? " -> " + a.errors.slice(0, 3).join(" | ") : ""}`);
     await a.page.screenshot({ path: path.join(SHOTS, "admin-users.png"), fullPage: true });
 
@@ -135,6 +162,11 @@ async function resetKarim() {
     for (const hash of ["/cash", "/users", "/settings", "/suppliers", "/partners"]) { await open(e.page, hash); check(await blocked(e.page), `engineer is blocked from ${hash}`); }
     await open(e.page, "/items");
     check(!(await e.page.locator("th", { hasText: "التكلفة" }).count()), "engineer sees no cost column");
+    await open(e.page, "/stock-counts");
+    check(!(await blocked(e.page)), "engineer can open stock counts");
+    await e.page.locator("main tbody tr.is-clickable").first().click();
+    await e.page.waitForURL((u) => u.hash.startsWith("#/stock-counts/"));
+    check(!(await e.page.getByRole("button", { name: "اعتماد الفروق" }).count()), "engineer cannot approve a count");
     await open(e.page, "/customers");
     check(!(await e.page.locator("th", { hasText: "المديونية" }).count()), "engineer sees no customer balances");
     const et = (await apiLogin("karim")).accessToken;

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "count_lines_variant_uq" ON "stock_count_lines" USING btree ("count_id","variant_id");

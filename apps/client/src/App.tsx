@@ -6,6 +6,7 @@ import { Login } from "./screens/Login";
 import { Dashboard } from "./screens/Dashboard";
 import { Home } from "./screens/Home";
 import { PartnersScreen } from "./screens/Partners";
+import { StockCountDetail, StockCounts } from "./screens/Counts";
 import { Reception } from "./screens/Reception";
 import { Intake } from "./screens/Intake";
 import { WorkOrderScreen } from "./screens/WorkOrder";
@@ -41,6 +42,8 @@ const routes: Route[] = [
   { path: "/items", render: () => <Items />, perm: "item.view" },
   { path: "/items/:id", render: (p) => <ItemDetail id={p.id} />, perm: "item.view" },
   { path: "/labels", render: () => <LabelMaker />, perm: "label.print" },
+  { path: "/stock-counts", render: () => <StockCounts />, perm: "stockCount.enter" },
+  { path: "/stock-counts/:id", render: (p) => <StockCountDetail id={p.id} />, perm: "stockCount.enter" },
   { path: "/customers", render: () => <Customers /> },
   { path: "/customers/:id", render: (p) => <CustomerFile id={p.id} /> },
   { path: "/cars/:id", render: (p) => <CustomerFile vehicleId={p.id} /> },

@@ -212,7 +212,7 @@ export const stockCountLines = pgTable("stock_count_lines", {
   variantId: uuid("variant_id").notNull().references(() => itemVariants.id),
   systemQtyMilli: bigint("system_qty_milli", { mode: "number" }).notNull(),
   countedQtyMilli: bigint("counted_qty_milli", { mode: "number" }).notNull(),
-});
+}, (t) => [uniqueIndex("count_lines_variant_uq").on(t.countId, t.variantId)]);
 
 export const servicePackages = pgTable("service_packages", { ...base(), ...archived(), name: text("name").notNull() });
 export const packageLines = pgTable("package_lines", {

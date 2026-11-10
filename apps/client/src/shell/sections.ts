@@ -1,4 +1,4 @@
-import { BarChart3, Bell, CarFront, FileText, Handshake, LayoutDashboard, Package, QrCode, Truck, UserRoundCog, Users, Wallet, type LucideIcon } from "lucide-react";
+import { BarChart3, Bell, CarFront, ClipboardCheck, FileText, Handshake, LayoutDashboard, Package, QrCode, Truck, UserRoundCog, Users, Wallet, type LucideIcon } from "lucide-react";
 import { can, type Action, type PermissionHolder, type Section } from "@jc/core";
 
 export type NavItem = { to: string; label: string; icon: LucideIcon; perm?: Action; count?: true };
@@ -17,9 +17,10 @@ export const SECTIONS: AppSection[] = [
     ],
   },
   {
-    id: "inventory", label: "المخزن", sub: "الأصناف والأرصدة، الملصقات، الموردين والمشتريات", icon: Package,
+    id: "inventory", label: "المخزن", sub: "الأصناف والأرصدة، الجرد، الملصقات، الموردين والمشتريات", icon: Package,
     nav: [
       { to: "/items", label: "الأصناف والأرصدة", icon: Package, perm: "item.view" },
+      { to: "/stock-counts", label: "الجرد", icon: ClipboardCheck, perm: "stockCount.enter" },
       { to: "/labels", label: "ملصقات الأصناف", icon: QrCode, perm: "label.print" },
       { to: "/suppliers", label: "الموردين والمشتريات", icon: Truck, perm: "supplier.manage" },
     ],

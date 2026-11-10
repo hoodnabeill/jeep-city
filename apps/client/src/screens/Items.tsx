@@ -27,15 +27,21 @@ export function Items() {
   const [q, setQ] = useState("");
   const [low, setLow] = useState(queryParam("low") === "1");
   const [newOpen, setNewOpen] = useState(false);
-  const list = useApi<Item[]>(`/items?${qs({ q: q.trim() || undefined, type: type === "all" ? undefined : type, low: low ? "1" : undefined })}`);
+  const [shelf, setShelf] = useState(queryParam("location") ?? "");
+  const shelves = useApi<string[]>("/items/locations").data ?? [];
+  const list = useApi<Item[]>(`/items?${qs({ q: q.trim() || undefined, type: type === "all" ? undefined : type, low: low ? "1" : undefined, location: shelf || undefined })}`);
   const rows = list.data ?? [];
   return (
     <div>
       <PageHead title="المخزن والأصناف" sub={<>{f.n(rows.length)} صنف في هذه القائمة · مخزن رئيسي واحد</>}
         actions={<><Button icon={<QrCode />} onClick={() => go("/labels")}>ملصقات QR</Button>{canManage && <Button variant="primary" icon={<Plus />} onClick={() => setNewOpen(true)}>صنف جديد</Button>}</>} />
       <div className="toolbar">
-        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="اسم الصنف، الكود، الاسم الإنجليزي أو امسح الباركود" aria-label="بحث في الأصناف" /></div>
+        <div className="input-group grow"><Search /><Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && rows.length === 1) go(`/items/${rows[0].id}`); }} placeholder="اسم الصنف، الكود، الاسم الإنجليزي أو امسح الباركود" aria-label="بحث في الأصناف" /></div>
         <Segmented label="نوع الصنف" value={type} onChange={setType} options={[{ value: "all", label: "الكل" }, ...(["part", "oil", "material", "labor"] as const).map((t) => ({ value: t, label: TYPE_LABEL[t] }))]} />
+        <Select value={shelf} onChange={(e) => setShelf(e.target.value)} aria-label="مكان التخزين" style={{ width: 170 }}>
+          <option value="">كل الأماكن</option>
+          {shelves.map((s) => <option key={s} value={s}>{s}</option>)}
+        </Select>
         <Chip pressed={low} onToggle={() => setLow(!low)}>تحت الحد الأدنى فقط</Chip>
       </div>
       <PageState loading={list.loading && !list.data} error={list.error} onRetry={list.reload} />
@@ -134,7 +140,7 @@ export function ItemDetail({ id }: { id: string }) {
   const canAdjust = useCan("stock.adjust");
   const seeCost = useCan("cost.view");
   const run = useAction();
-  const q = useApi<Item & { movements: Movement[] }>(`/items/${id}`);
+  const q = useApi<Item & { movements: Movement[]; stats: { variantId: string; used30Milli: number; used90Milli: number; lastUsedAt: string | null }[] }>(`/items/${id}`);
   const labelSize = useLabelSize();
   const [g, setG] = useState(0);
   const [edit, setEdit] = useState(false);
@@ -143,6 +149,11 @@ export function ItemDetail({ id }: { id: string }) {
   if (!it) return <PageState loading={q.loading} error={q.error} onRetry={q.reload} />;
   const v = it.variants[Math.min(g, it.variants.length - 1)];
   const moves = it.movements.filter((m) => m.variantId === v.id);
+  // Balance after each movement, walking back from today's balance (the list is newest first).
+  const after = moves.reduce<number[]>((acc, m, k) => [...acc, k === 0 ? v.qtyMilli : acc[k - 1] - moves[k - 1].qtyMilli], []);
+  const st = it.stats.find((s) => s.variantId === v.id);
+  const perDay = (st?.used90Milli ?? 0) / 90;
+  const coverDays = perDay > 0 ? Math.floor(v.qtyMilli / perDay) : null;
   return (
     <div className="stack">
       <PageHead back={{ to: "/items", label: "المخزن والأصناف" }}
@@ -175,25 +186,37 @@ export function ItemDetail({ id }: { id: string }) {
           {it.trackStock && (
             <Panel title={<>حركة المخزن · {v.grade ? GRADE_LABEL[v.grade] : it.nameAr}</>} sub="الرصيد = مجموع الحركات. لا تُحذف حركة أبدًا." flush>
               <table className="table">
-                <thead><tr><th>الوقت</th><th>الحركة</th><th>السبب</th><th className="num">الكمية</th>{seeCost && <th className="num">التكلفة</th>}<th>بواسطة</th></tr></thead>
+                <thead><tr><th>الوقت</th><th>الحركة</th><th>السبب</th><th className="num">الكمية</th><th className="num">الرصيد بعدها</th>{seeCost && <th className="num">التكلفة</th>}<th>بواسطة</th></tr></thead>
                 <tbody>
-                  {moves.map((m) => (
+                  {moves.map((m, k) => (
                     <tr key={m.id}>
                       <td><When iso={m.at} /></td>
                       <td className="cell-main">{MOVE_LABEL[m.kind] ?? m.kind}</td>
                       <td className="muted">{m.reason ?? ""}</td>
                       <td className="num" style={{ color: m.qtyMilli < 0 ? "var(--bad)" : "var(--ok)", fontWeight: 700 }}>{m.qtyMilli > 0 ? "+" : "−"}{f.n(Math.abs(m.qtyMilli) / 1000)}</td>
+                      <td className="num">{f.n(after[k] / 1000)}</td>
                       {seeCost && <td className="num muted">{m.unitCostPt !== undefined ? <Money pt={m.unitCostPt} cur={false} /> : "—"}</td>}
                       <td>{m.by ?? "—"}</td>
                     </tr>
                   ))}
-                  {!moves.length && <tr><td colSpan={6} className="hint-line" style={{ textAlign: "center" }}>لا توجد حركات بعد.</td></tr>}
+                  {!moves.length && <tr><td colSpan={7} className="hint-line" style={{ textAlign: "center" }}>لا توجد حركات بعد.</td></tr>}
                 </tbody>
               </table>
             </Panel>
           )}
         </div>
         <aside className="stack sticky-side">
+          {it.trackStock && (
+            <Panel title="تحليل الصنف" sub={v.grade ? GRADE_LABEL[v.grade] : undefined}>
+              <DL items={[
+                { label: "اتصرف آخر 30 يوم", value: f.n((st?.used30Milli ?? 0) / 1000) },
+                { label: "اتصرف آخر 90 يوم", value: f.n((st?.used90Milli ?? 0) / 1000) },
+                { label: "آخر صرف", value: st?.lastUsedAt ? <When iso={st.lastUsedAt} /> : "لم يُصرف بعد" },
+                { label: "الرصيد يكفي", value: coverDays === null ? "—" : `حوالي ${f.n(coverDays)} يوم` },
+                ...(seeCost ? [{ label: "قيمة الرصيد بالتكلفة", value: <Money pt={Math.round((v.qtyMilli * (v.avgCostPt ?? 0)) / 1000)} /> }] : []),
+              ]} cols={2} />
+            </Panel>
+          )}
           <Panel title="الملصق" icon={<QrCode />} sub="معاينة 40 × 30 مم. الطباعة على الطابعة الحرارية في المرحلة القادمة.">
             <div className="stack" style={{ gap: 14, justifyItems: "center" }}>
               <QrLabel r={{ qr: v.barcode ?? it.code, name: it.nameAr, sub: `${it.code}${v.grade ? ` · ${GRADE_LABEL[v.grade]}` : ""}`, pricePt: v.sellPricePt }} size={labelSize} price />
