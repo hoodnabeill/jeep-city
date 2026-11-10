@@ -32,6 +32,7 @@ export async function listen(): Promise<string> {
     if (!available) throw new DeviceError("التعرف على الصوت مش متاح على الموبايل ده.");
     const perm = await SpeechRecognition.requestPermissions();
     if (perm.speechRecognition !== "granted") throw new DeviceError("اسمح للتطبيق باستخدام الميكروفون من إعدادات الموبايل.");
+    if (Capacitor.getPlatform() === "ios") return spokenToSearch(await listenIos());
     const r = await SpeechRecognition.start({ language: "ar-EG", maxResults: 3, partialResults: false, popup: true, prompt: "قول رقم اللوحة وحروفها، أو اسم العميل" });
     const heard = r.matches?.[0] ?? "";
     if (!heard) throw new DeviceError("مسمعتش حاجة. جرّب تاني.");
@@ -52,6 +53,36 @@ export async function listen(): Promise<string> {
   });
 }
 
+/**
+ * iOS has no system dialog and only sends the final words after stop(), so: take the live words and stop
+ * 1.5 s after the last one (or 7 s if nothing is said). iOS may not have Egyptian Arabic; fall back to another Arabic.
+ */
+async function listenIos(): Promise<string> {
+  const { languages } = await SpeechRecognition.getSupportedLanguages().catch(() => ({ languages: [] as string[] }));
+  const norm = (l: string) => l.replace("_", "-");
+  const language = ["ar-EG", "ar-SA"].find((l) => languages.some((x) => norm(x) === l)) ?? languages.map(norm).find((l) => l.startsWith("ar")) ?? "ar-SA";
+  let heard = "";
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let settle: (words: string) => void = () => {};
+  const done = new Promise<string>((resolve) => { settle = resolve; });
+  const finish = () => { clearTimeout(timer); settle(heard); };
+  const wait = (ms: number) => { clearTimeout(timer); timer = setTimeout(finish, ms); };
+  const sub = await SpeechRecognition.addListener("partialResults", (d) => { heard = d.matches?.[0] ?? heard; wait(1500); });
+  try {
+    wait(7000);
+    await SpeechRecognition.start({ language, maxResults: 3, partialResults: true });
+    await done;
+  } catch {
+    clearTimeout(timer);
+    throw new DeviceError("البحث بالصوت مش شغال على الموبايل ده.");
+  } finally {
+    await SpeechRecognition.stop().catch(() => {});
+    await sub.remove();
+  }
+  if (!heard) throw new DeviceError("مسمعتش حاجة. جرّب تاني.");
+  return heard;
+}
+
 /** Open the camera scanner and return the code read (a QR label, a barcode, or a chassis barcode). */
 export async function scanCode(): Promise<string> {
   if (!native) throw new DeviceError("المسح بالكاميرا من تطبيق الموبايل. على الكمبيوتر استخدم الماسح.");
@@ -61,6 +92,9 @@ export async function scanCode(): Promise<string> {
       await BarcodeScanner.installGoogleBarcodeScannerModule().catch(() => {});
       throw new DeviceError("الماسح بيتحمّل لأول مرة على الموبايل ده. جرّب تاني بعد دقيقة.");
     }
+  } else {
+    const { camera } = await BarcodeScanner.requestPermissions();
+    if (camera !== "granted" && camera !== "limited") throw new DeviceError("اسمح للتطبيق باستخدام الكاميرا من إعدادات الموبايل.");
   }
   const { barcodes } = await BarcodeScanner.scan({ formats: [BarcodeFormat.QrCode, BarcodeFormat.Code128, BarcodeFormat.Code39, BarcodeFormat.Ean13, BarcodeFormat.DataMatrix] });
   const code = barcodes[0]?.rawValue?.trim();

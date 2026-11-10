@@ -1,7 +1,8 @@
 # Builds the three apps from the same React client:
 #   Windows  → Jeep City installer (.exe, Tauri NSIS)        artifact "windows-installer"
 #   Android  → debug APK (installable on any phone)           artifact "android-apk"
-#   iOS      → simulator build (proves it compiles)           a device build needs an Apple Developer account
+#   iOS      → unsigned .ipa                                   artifact "ios-ipa"; installed with SideStore/AltStore,
+#              which signs it with the phone owner's free Apple ID (no paid developer account)
 # Runs on pushes to main, on version tags (v*) and by hand. A tag also attaches the files to a GitHub Release.
 # Server addresses baked in as defaults: repository variable SERVER_URLS, e.g.
 #   http://192.168.1.10/api,https://jc.example.com/api       (each device can change them on the login screen)
@@ -67,9 +68,17 @@ jobs:
         run: |
           npm run build:app -w @jc/client
           cd apps/mobile && npx cap sync ios
-      - name: Build for the simulator (no signing)
+      - name: Build the unsigned IPA
         working-directory: apps/mobile/ios/App
-        run: xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -destination generic/platform=iOS -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          mkdir Payload && cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qry "Jeep.City_$(node -p "require('../../../client/package.json').version").ipa" Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: apps/mobile/ios/App/*.ipa
+          if-no-files-found: error
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -84,3 +93,4 @@ jobs:
           files: |
             out/windows-installer/*.exe
             out/android-apk/*.apk
+            out/ios-ipa/*.ipa

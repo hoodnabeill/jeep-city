@@ -1,6 +1,6 @@
 [package]
 name = "jeep-city"
-version = "0.2.1"
+version = "0.2.2"
 description = "Jeep City shop system (Windows)"
 edition = "2021"
 

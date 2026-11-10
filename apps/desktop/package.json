@@ -1,6 +1,6 @@
 {
   "name": "@jc/desktop",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "Windows app (Tauri 2) around the same React client. Built on GitHub Actions (needs Rust; see apps/desktop/README.md).",
   "scripts": {
