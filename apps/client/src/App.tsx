@@ -55,6 +55,8 @@ const routes: Route[] = [
   { path: "/reports", render: () => <Reports />, perm: "report.view" },
   { path: "/alerts", render: () => <Alerts /> },
   { path: "/partners", render: () => <PartnersScreen />, perm: "partners.manage" },
+  { path: "/finance/daily", render: () => <Reports key="daily" fixed="daily" preset="day" />, perm: "report.view" },
+  { path: "/finance/income", render: () => <Reports key="income" fixed="income" />, perm: "report.view" },
   { path: "/staff", render: () => <StaffTeam />, perm: "staff.manage" },
   { path: "/staff/performance", render: () => <StaffPerformance />, perm: "staff.manage" },
   { path: "/staff/money", render: () => <StaffMoney />, perm: "staff.manage" },

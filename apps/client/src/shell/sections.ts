@@ -1,4 +1,4 @@
-import { BarChart3, Bell, CarFront, ClipboardCheck, FileText, Fingerprint, HandCoins, History, Handshake, HardHat, LayoutDashboard, Package, QrCode, TrendingUp, Truck, UserRoundCog, Users, Wallet, type LucideIcon } from "lucide-react";
+import { BarChart3, Bell, CalendarDays, Landmark, Scale, CarFront, ClipboardCheck, FileText, Fingerprint, HandCoins, History, Handshake, HardHat, LayoutDashboard, Package, QrCode, TrendingUp, Truck, UserRoundCog, Users, Wallet, type LucideIcon } from "lucide-react";
 import { can, type Action, type PermissionHolder, type Section } from "@jc/core";
 
 export type NavItem = { to: string; label: string; icon: LucideIcon; perm?: Action; count?: true };
@@ -26,10 +26,12 @@ export const SECTIONS: AppSection[] = [
     ],
   },
   {
-    id: "accounts", label: "الحسابات والتقارير", short: "الحسابات", sub: "صندوق الكاش والمصروفات والتقارير وأرباح الشركاء", icon: Wallet,
+    id: "accounts", label: "المالية", short: "المالية", sub: "التقرير اليومي، قائمة الدخل، الخزنة والمصروفات، كل التقارير، وأرباح الشركاء", icon: Landmark,
     nav: [
+      { to: "/finance/daily", label: "التقرير اليومي", icon: CalendarDays, perm: "report.view" },
+      { to: "/finance/income", label: "قائمة الدخل", icon: Scale, perm: "report.view" },
       { to: "/cash", label: "صندوق الكاش", icon: Wallet, perm: "cash.manage" },
-      { to: "/reports", label: "التقارير", icon: BarChart3, perm: "report.view" },
+      { to: "/reports", label: "كل التقارير", icon: BarChart3, perm: "report.view" },
       { to: "/partners", label: "الشركاء", icon: Handshake, perm: "partners.manage" },
     ],
   },

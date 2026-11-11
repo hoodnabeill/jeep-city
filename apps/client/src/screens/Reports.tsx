@@ -55,7 +55,7 @@ export function ReportTable({ r, sticky }: { r: ReportData; sticky?: boolean }) 
     <table className={`table table--compact${sticky ? " table--sticky" : ""}`}>
       <thead><tr>{r.columns.map((c) => <th key={c.key} className={num(c) ? "num" : undefined}>{c.label}</th>)}</tr></thead>
       <tbody>
-        {r.rows.map((row, i) => <tr key={i}>{r.columns.map((c, k) => <td key={c.key} className={num(c) ? "num" : k === 0 ? "cell-main" : undefined}>{cell(c, row[c.key])}</td>)}</tr>)}
+        {r.rows.map((row, i) => <tr key={i}>{r.columns.map((c, k) => <td key={c.key} className={num(c) ? "num" : k === 0 ? "cell-main" : undefined}>{c.key === "section" && i > 0 && r.rows[i - 1].section === row.section ? "" : cell(c, row[c.key])}</td>)}</tr>)}
         {!r.rows.length && <tr><td colSpan={r.columns.length} className="subtle">لا توجد بيانات في هذه الفترة.</td></tr>}
       </tbody>
       {r.totals && r.rows.length > 0 && (
@@ -79,12 +79,12 @@ function downloadCsv(r: ReportData, from: string, to: string) {
 }
 
 /** fixed: one report shown on its own screen (the staff performance page), with no report picker. */
-export function Reports({ fixed }: { fixed?: string } = {}) {
+export function Reports({ fixed, preset: start = "month" }: { fixed?: string; preset?: string } = {}) {
   const f = useFmt();
   const list = useApi<{ id: string; title: string; ranged: boolean }[]>(fixed ? null : "/reports");
   const [id, setId] = useState(fixed ?? queryParam("r") ?? "sales");
-  const [preset, setPreset] = useState("month");
-  const [[from, to], setRange] = useState(presetRange("month"));
+  const [preset, setPreset] = useState(start);
+  const [[from, to], setRange] = useState(presetRange(start));
   const [view, setView] = useState<"chart" | "table">("chart");
   const [hover, setHover] = useState<number | null>(null);
   const meta = list.data?.find((x) => x.id === id);

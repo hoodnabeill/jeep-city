@@ -77,6 +77,121 @@ export const REPORTS: Record<string, { title: string; ranged: boolean; perm?: Ac
       };
     },
   },
+  daily: {
+    title: "التقرير اليومي", ranged: true,
+    /** One day (or any period) of money, section by section: sales, what was collected and how, what went out, the drawer, profit, debts, cars. */
+    async run(db, from, to) {
+      const inRange = (col: SQL) => sql`${day(col)} between ${from}::date and ${to}::date`;
+      const one = async (q: SQL) => Object.fromEntries(Object.entries((await rows(db, q))[0] ?? {}).map(([k, v]) => [k, Number(v ?? 0)])) as Record<string, number>;
+      const out: { section: string; item: string; count: number | null; amount: number | null }[] = [];
+      const add = (section: string, item: string, amount: number | null, count: number | null = null) => out.push({ section, item, count, amount });
+      const net = (c: string) => sql.raw(`coalesce((s.totals->'net'->>'${c}')::bigint, 0)`);
+
+      const s = await one(sql`select count(*) as n, sum(s.amount_due_pt) as total, sum(${net("labor")}) as labor, sum(${net("part")}) as part, sum(${net("oil")}) as oil,
+          sum(${net("material")} + ${net("paint")}) as material, sum(coalesce((s.totals->>'discountPt')::bigint, 0)) as discount, sum(coalesce((s.totals->>'taxPt')::bigint, 0)) as tax
+        from statements s where ${finalIn(from, to)}`);
+      const cancelled = await one(sql`select count(*) as n, sum(s.amount_due_pt) as total from statements s where s.status = 'cancelled' and s.statement_date between ${from} and ${to}`);
+      const ret = await one(sql`select count(*) as n, sum(r.total_pt) as total from sales_returns r where ${inRange(sql`r.created_at`)}`);
+      add("المبيعات", "البيانات والبيع المباشر", s.total, s.n);
+      add("المبيعات", "المصنعيات", s.labor); add("المبيعات", "قطع الغيار", s.part); add("المبيعات", "الزيوت", s.oil); add("المبيعات", "الخامات والدهان", s.material);
+      add("المبيعات", "الخصومات", s.discount); add("المبيعات", "الضريبة", s.tax);
+      if (ret.n) add("المبيعات", "مرتجعات المبيعات", ret.total, ret.n);
+      if (cancelled.n) add("المبيعات", "بيانات اتلغت", cancelled.total, cancelled.n);
+
+      const pays = await rows(db, sql`select pm.label, p.kind, pm.is_credit as credit, count(*)::int as n, sum(p.amount_pt) as total
+        from payments p join payment_methods pm on pm.id = p.method_id where ${inRange(sql`p.paid_at`)}
+        group by pm.label, pm.sort, p.kind, pm.is_credit order by p.kind, pm.sort`);
+      let collected = 0;
+      for (const p of pays) {
+        const total = Number(p.total), label = String(p.label);
+        if (!p.credit) collected += total;
+        add("التحصيل", p.kind === "debt_settlement" ? `تحصيل مديونية · ${label}` : p.kind === "refund" ? `رد فلوس لعميل · ${label}` : p.credit ? `${label} (على الحساب، مش متحصل)` : label, total, Number(p.n));
+      }
+      add("التحصيل", "إجمالي اللي اتحصّل فعلًا", collected);
+
+      const OUT = "المصروفات والمدفوعات";
+      for (const e of await rows(db, sql`select ec.name, count(*)::int as n, sum(e.amount_pt) as total from expenses e join expense_categories ec on ec.id = e.category_id
+          where ${inRange(sql`e.spent_at`)} group by ec.name order by total desc`)) add(OUT, `مصروفات · ${e.name}`, Number(e.total), Number(e.n));
+      const STAFF: Record<string, string> = { expense: "مصروفات الموظفين", advance: "سلف الموظفين", debt: "مديونيات على الموظفين", repayment: "سداد من الموظفين" };
+      for (const e of await rows(db, sql`select se.kind, count(*)::int as n, sum(se.amount_pt) as total from staff_entries se where ${inRange(sql`se.at`)} group by se.kind`))
+        add(OUT, STAFF[String(e.kind)] ?? String(e.kind), Number(e.total), Number(e.n));
+      const b = await one(sql`select count(*) as n, sum(b.amount_pt) as total from bonuses b where ${inRange(sql`b.given_at`)}`);
+      if (b.n) add(OUT, "حوافز", b.total, b.n);
+      const pw = await one(sql`select count(*) as n, sum(w.amount_pt) as total from partner_withdrawals w where ${inRange(sql`w.taken_at`)}`);
+      if (pw.n) add(OUT, "مسحوبات الشركاء", pw.total, pw.n);
+      for (const p of await rows(db, sql`select p.payment, count(*)::int as n, sum(p.total_pt) as total from purchases p where p.kind = 'invoice' and p.purchase_date between ${from} and ${to} group by p.payment`))
+        add(OUT, p.payment === "credit" ? "مشتريات آجل" : "مشتريات نقدي", Number(p.total), Number(p.n));
+      const sp = await one(sql`select count(*) as n, sum(-l.amount_pt) as total from supplier_ledger l where l.kind = 'payment' and ${inRange(sql`l.created_at`)}`);
+      if (sp.n) add(OUT, "مدفوعات للموردين", sp.total, sp.n);
+
+      const CASH: Record<string, string> = {
+        statement_payment: "تحصيل بيانات", debt_payment: "تحصيل مديونيات", refund: "رد فلوس لعملاء", expense: "مصروفات", supplier_payment: "مدفوعات موردين",
+        supplier_refund: "مرتجع من مورد", deposit: "إيداع", withdrawal: "سحب ومسحوبات",
+      };
+      let cashNet = 0;
+      for (const m of await rows(db, sql`select m.kind, count(*)::int as n, sum(m.amount_pt) as total from cash_movements m where ${inRange(sql`m.moved_at`)} group by m.kind order by sum(m.amount_pt) desc`)) {
+        cashNet += Number(m.total);
+        add("الخزنة", CASH[String(m.kind)] ?? String(m.kind), Number(m.total), Number(m.n));
+      }
+      add("الخزنة", "صافي حركة الخزنة", cashNet);
+      const diff = await one(sql`select count(*) as n, sum(cs.difference_pt) as total from cash_sessions cs where cs.closed_at is not null and ${inRange(sql`cs.closed_at`)}`);
+      if (diff.n) add("الخزنة", "عجز أو زيادة عند القفل", diff.total, diff.n);
+
+      const p = await profitSummary(db, from, to);
+      add("الربح", "المبيعات من غير ضريبة", p.newSalesPt - p.taxPt); add("الربح", "تكلفة القطع المباعة", p.cogsPt);
+      add("الربح", "المصروفات", p.expensesPt); add("الربح", "الحوافز", p.bonusesPt); add("الربح", "المرتجعات بعد رجوع القطع", p.returnsPt - p.returnedCostPt);
+      add("الربح", "صافي الربح", p.profitPt);
+
+      const debt = await one(sql`select sum(amount_pt) filter (where amount_pt > 0 and ${inRange(sql`created_at`)}) as added, sum(-amount_pt) filter (where amount_pt < 0 and ${inRange(sql`created_at`)}) as paid, sum(amount_pt) as now from customer_ledger`);
+      const sup = await one(sql`select sum(amount_pt) as now from supplier_ledger`);
+      add("المديونيات", "اتسجّل على العملاء", debt.added); add("المديونيات", "اتحصّل من مديونيات العملاء", debt.paid);
+      add("المديونيات", "إجمالي مديونيات العملاء النهارده", debt.now); add("المديونيات", "إجمالي المستحق للموردين النهارده", sup.now);
+
+      const cars = await one(sql`select (select count(*) from work_orders w where w.archived_at is null and w.type = 'repair' and ${inRange(sql`w.entered_at`)}) as inn,
+          (select count(*) from statements s where ${finalIn(from, to)} and s.work_order_id is not null) as out,
+          (select count(*) from work_orders w where w.archived_at is null and w.status in ('open', 'ready')) as now`);
+      add("الورشة", "عربيات دخلت", null, cars.inn); add("الورشة", "عربيات اتسلمت", null, cars.out); add("الورشة", "عربيات في الورشة النهارده", null, cars.now);
+
+      return {
+        rows: out,
+        note: "التحصيل والخزنة بتاريخ الدفع، والمبيعات بتاريخ البيان. «على الحساب» مبيعات مش متحصلة لسه وبتظهر في المديونيات. الأرقام في «المديونيات» و«العربيات في الورشة» بتاعة النهارده مش بتاعة الفترة.",
+        columns: [{ key: "section", label: "القسم", type: "text" }, { key: "item", label: "البند", type: "text" }, { key: "count", label: "العدد", type: "int" }, { key: "amount", label: "المبلغ", type: "money" }],
+      };
+    },
+  },
+  income: {
+    title: "قائمة الدخل", ranged: true,
+    /** Profit and loss for the period, the same numbers as profitSummary laid out as an income statement (new-system statements only). */
+    async run(db, from, to) {
+      const net = (c: string) => sql.raw(`coalesce((s.totals->'net'->>'${c}')::bigint, 0)`);
+      const [r] = await rows(db, sql`select sum(${net("labor")}) as labor, sum(${net("part")}) as part, sum(${net("oil")}) as oil, sum(${net("material")} + ${net("paint")}) as material
+        from statements s where ${finalIn(from, to)} and s.kind <> 'byte'`);
+      const n = (v: unknown) => Number(v ?? 0);
+      const p = await profitSummary(db, from, to);
+      const exp = await rows(db, sql`select ec.name, sum(e.amount_pt) as total from expenses e join expense_categories ec on ec.id = e.category_id
+        where ${day(sql`e.spent_at`)} between ${from}::date and ${to}::date group by ec.name order by total desc`);
+      const staffExp = exp.reduce((a, e) => a - n(e.total), p.expensesPt);
+      const out: { section: string; item: string; amount: number }[] = [];
+      const add = (section: string, item: string, amount: number) => out.push({ section, item, amount });
+      add("الإيرادات", "المصنعيات", n(r?.labor)); add("الإيرادات", "قطع الغيار", n(r?.part)); add("الإيرادات", "الزيوت", n(r?.oil)); add("الإيرادات", "الخامات والدهان", n(r?.material));
+      add("الإيرادات", "ناقص: مرتجعات المبيعات", -p.returnsPt);
+      const revenue = p.newSalesPt - p.taxPt - p.returnsPt;
+      add("الإيرادات", "صافي الإيرادات", revenue);
+      const cost = p.cogsPt - p.returnedCostPt;
+      add("تكلفة المبيعات", "تكلفة القطع المباعة بعد المرتجع", -cost);
+      add("تكلفة المبيعات", "مجمل الربح", revenue - cost);
+      for (const e of exp) add("المصروفات", e.name as string, -n(e.total));
+      if (staffExp) add("المصروفات", "مصروفات الموظفين", -staffExp);
+      if (p.bonusesPt) add("المصروفات", "الحوافز", -p.bonusesPt);
+      add("المصروفات", "إجمالي المصروفات", -(p.expensesPt + p.bonusesPt));
+      add("النتيجة", "صافي الربح", p.profitPt);
+      return {
+        rows: out,
+        note: p.byteSalesPt ? "قائمة الدخل على بيانات النظام الجديد بس؛ بيانات بايت القديمة مالهاش تكلفة." : "المبالغ من غير ضريبة. السالب = بيتخصم.",
+        columns: [{ key: "section", label: "القسم", type: "text" }, { key: "item", label: "البند", type: "text" }, { key: "amount", label: "المبلغ", type: "money" }],
+      };
+    },
+  },
   "top-items": {
     title: "أكثر الأصناف مبيعًا", ranged: true,
     async run(db, from, to) {

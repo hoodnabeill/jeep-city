@@ -57,7 +57,7 @@ export function can(who: PermissionHolder | undefined | null, action: Action): b
 
 /** The switches on the user screen: section (home tile) and Arabic label. session.use is implied by an active account. */
 export type Section = "reception" | "inventory" | "accounts" | "staff" | "users";
-export const SECTION_LABEL: Record<Section, string> = { reception: "الاستقبال", inventory: "المخزن", accounts: "الحسابات والتقارير", staff: "الموظفين", users: "المستخدمين والإعدادات" };
+export const SECTION_LABEL: Record<Section, string> = { reception: "الاستقبال", inventory: "المخزن", accounts: "المالية", staff: "الموظفين", users: "المستخدمين والإعدادات" };
 export const PERMISSION_INFO: Record<Exclude<Action, "session.use">, { section: Section; label: string }> = {
   "workOrder.create": { section: "reception", label: "استقبال سيارة وفتح أمر شغل" },
   "workOrder.edit": { section: "reception", label: "تعديل أوامر الشغل المفتوحة" },
