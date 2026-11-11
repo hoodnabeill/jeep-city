@@ -1,10 +1,10 @@
-import { BarChart3, Bell, CarFront, ClipboardCheck, FileText, History, Handshake, LayoutDashboard, Package, QrCode, Truck, UserRoundCog, Users, Wallet, type LucideIcon } from "lucide-react";
+import { BarChart3, Bell, CarFront, ClipboardCheck, FileText, Fingerprint, HandCoins, History, Handshake, HardHat, LayoutDashboard, Package, QrCode, TrendingUp, Truck, UserRoundCog, Users, Wallet, type LucideIcon } from "lucide-react";
 import { can, type Action, type PermissionHolder, type Section } from "@jc/core";
 
 export type NavItem = { to: string; label: string; icon: LucideIcon; perm?: Action; count?: true };
 export type AppSection = { id: Section; label: string; short: string; sub: string; icon: LucideIcon; nav: NavItem[] };
 
-/** The four home tiles. A tile (and each page in it) shows only to users with the page's permission. */
+/** The home tiles. A tile (and each page in it) shows only to users with the page's permission. */
 export const SECTIONS: AppSection[] = [
   {
     id: "reception", label: "الاستقبال", short: "الاستقبال", sub: "السيارات في الورشة، العملاء، البيانات والمذكرات", icon: CarFront,
@@ -34,7 +34,17 @@ export const SECTIONS: AppSection[] = [
     ],
   },
   {
-    id: "users", label: "المستخدمين", short: "المستخدمين", sub: "الحسابات والصلاحيات والفنيين وسجل العمليات", icon: UserRoundCog,
+    // /staff last: a nav entry matches every path that starts with its own.
+    id: "staff", label: "الموظفين", short: "الموظفين", sub: "أداء المهندسين والفنيين، السلف والمصروفات والمديونيات، الحضور والانصراف", icon: HardHat,
+    nav: [
+      { to: "/staff/performance", label: "الأداء", icon: TrendingUp, perm: "staff.manage" },
+      { to: "/staff/money", label: "السلف والمصروفات", icon: HandCoins, perm: "staff.manage" },
+      { to: "/staff/attendance", label: "الحضور والانصراف", icon: Fingerprint, perm: "staff.manage" },
+      { to: "/staff", label: "الفريق", icon: Users, perm: "staff.manage" },
+    ],
+  },
+  {
+    id: "users", label: "المستخدمين", short: "المستخدمين", sub: "الحسابات والصلاحيات وسجل العمليات", icon: UserRoundCog,
     nav: [
       { to: "/users", label: "المستخدمين والصلاحيات", icon: UserRoundCog, perm: "settings.manage" },
       { to: "/activity", label: "سجل العمليات", icon: History, perm: "audit.view" },

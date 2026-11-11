@@ -432,8 +432,8 @@ a.strip__cell:hover { background: var(--surface-hover); }
 /* ---------- Home: one tile per section ---------- */
 .home { max-width: 1100px; margin: 0 auto; padding-block: 24px; }
 .home__hello { font-size: var(--fs-xl, 1.6rem); margin: 0 0 20px; }
-.home__tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-@media (max-width: 1280px) { .home__tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.home__tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .home__tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .home__tiles { grid-template-columns: minmax(0, 1fr); } .home-tile { min-height: 0; } }
 .home-tile {
   position: relative; display: grid; align-content: start; gap: 10px; min-height: 200px; padding: 24px;
@@ -514,9 +514,9 @@ a.strip__cell:hover { background: var(--surface-hover); }
     flex: 1 1 0; min-width: 0; display: grid; justify-items: center; align-content: center; gap: 4px;
     color: var(--rail-muted); text-decoration: none;
   }
-  .tabbar__icon { position: relative; display: grid; place-items: center; width: 56px; height: 30px; transition: background-color var(--t-fast); }
+  .tabbar__icon { position: relative; display: grid; place-items: center; width: 48px; height: 30px; transition: background-color var(--t-fast); }
   .tabbar__icon svg { width: 22px; height: 22px; stroke-width: 1.9; }
-  .tabbar__label { font-size: 0.72rem; font-weight: 600; line-height: 1.2; max-width: 100%; padding-inline: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tabbar__label { font-size: 0.68rem; font-weight: 600; line-height: 1.2; max-width: 100%; padding-inline: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tabbar__item[aria-current="page"] { color: var(--surface); }
   .tabbar__item[aria-current="page"] .tabbar__icon {
     background: var(--jc-yellow); color: var(--jc-black);

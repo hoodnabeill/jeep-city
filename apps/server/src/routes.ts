@@ -21,6 +21,7 @@ import { alertRoutes } from "./modules/alerts";
 import { shareRoutes } from "./modules/share";
 import { conditionRoutes } from "./modules/condition";
 import { partnerRoutes } from "./modules/partners";
+import { staffRoutes } from "./modules/staff";
 import { countRoutes } from "./modules/counts";
 import { fileRoutes } from "./modules/files";
 import { Id } from "./http";
@@ -44,6 +45,7 @@ export function routes(app: FastifyInstance, db: Db, cfg: Config) {
   shareRoutes(app, db, auth);
   conditionRoutes(app, db, auth);
   partnerRoutes(app, db, auth);
+  staffRoutes(app, db, auth);
   countRoutes(app, db, auth);
   fileRoutes(app, db, cfg, auth);
 

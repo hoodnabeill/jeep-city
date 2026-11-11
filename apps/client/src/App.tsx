@@ -6,6 +6,7 @@ import { Login } from "./screens/Login";
 import { Dashboard } from "./screens/Dashboard";
 import { Home } from "./screens/Home";
 import { PartnersScreen } from "./screens/Partners";
+import { StaffAttendance, StaffMoney, StaffPerformance, StaffTeam } from "./screens/Staff";
 import { ActivityLog } from "./screens/ActivityLog";
 import { StockCountDetail, StockCounts } from "./screens/Counts";
 import { Reception } from "./screens/Reception";
@@ -54,6 +55,10 @@ const routes: Route[] = [
   { path: "/reports", render: () => <Reports />, perm: "report.view" },
   { path: "/alerts", render: () => <Alerts /> },
   { path: "/partners", render: () => <PartnersScreen />, perm: "partners.manage" },
+  { path: "/staff", render: () => <StaffTeam />, perm: "staff.manage" },
+  { path: "/staff/performance", render: () => <StaffPerformance />, perm: "staff.manage" },
+  { path: "/staff/money", render: () => <StaffMoney />, perm: "staff.manage" },
+  { path: "/staff/attendance", render: () => <StaffAttendance />, perm: "staff.manage" },
   { path: "/settings", render: () => <SettingsScreen />, perm: "settings.manage" },
   { path: "/print/statement/:id", render: (p) => <PrintStatement id={p.id} />, bare: true },
   { path: "/print/receipt/:id", render: (p) => <PrintReceipt id={p.id} />, bare: true },

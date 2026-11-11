@@ -21,7 +21,7 @@ const SKIP = new Set(["/sync/push", "/numbers/blocks", "/files", "/share"]);
 const ENTITY: Record<string, string> = {
   "work-orders": "work_order", customers: "customer", vehicles: "vehicle", statements: "statement", "direct-sales": "statement", items: "item",
   suppliers: "supplier", technicians: "technician", reminders: "reminder", "stock-counts": "stock_count", packages: "package",
-  "item-categories": "item_category", "expense-categories": "expense_category", partners: "partners", users: "user", share: "share",
+  "item-categories": "item_category", "expense-categories": "expense_category", partners: "partners", staff: "staff_entry", users: "user", share: "share",
 };
 const VIEW_EVERY_MS = 10 * 60_000;
 const SEARCH_IDLE_MS = 3_000;

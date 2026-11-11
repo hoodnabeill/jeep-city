@@ -6,6 +6,7 @@
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
+import type { Action } from "@jc/core";
 import { requirePerm } from "../auth/auth";
 import type { Db } from "../db/client";
 import { AppError } from "../errors";
@@ -30,7 +31,7 @@ const finalIn = (from: string, to: string) => sql`s.status = 'final' and s.state
 
 /**
  * Net profit for a date range, on new-system statements only (Byte statements carry no cost, D-80):
- * sales without VAT - cost of parts sold - expenses - technician bonuses - (sales returns - cost of the returned stock).
+ * sales without VAT - cost of parts sold - expenses (staff expenses included) - technician bonuses - (sales returns - cost of the returned stock).
  */
 export async function profitSummary(db: Db, from: string, to: string) {
   const [p] = await rows(db, sql`select
@@ -41,7 +42,8 @@ export async function profitSummary(db: Db, from: string, to: string) {
          left join doc_lines l on m.ref_type = 'doc_line' and l.id = m.ref_id
          join statements s2 on s2.id = coalesce(l.statement_id, case when m.ref_type = 'statement' then m.ref_id end)
          where s2.status = 'final' and s2.kind <> 'byte' and s2.statement_date between ${from} and ${to}) as "cogsPt",
-      (select coalesce(sum(e.amount_pt), 0) from expenses e where ${day(sql`e.spent_at`)} between ${from}::date and ${to}::date) as "expensesPt",
+      (select coalesce(sum(e.amount_pt), 0) from expenses e where ${day(sql`e.spent_at`)} between ${from}::date and ${to}::date)
+        + (select coalesce(sum(se.amount_pt), 0) from staff_entries se where se.kind = 'expense' and ${day(sql`se.at`)} between ${from}::date and ${to}::date) as "expensesPt",
       (select coalesce(sum(b.amount_pt), 0) from bonuses b where ${day(sql`b.given_at`)} between ${from}::date and ${to}::date) as "bonusesPt",
       (select coalesce(sum(r.total_pt), 0) from sales_returns r join statements s3 on s3.id = r.statement_id
          where s3.kind <> 'byte' and ${day(sql`r.created_at`)} between ${from}::date and ${to}::date) as "returnsPt",
@@ -53,7 +55,8 @@ export async function profitSummary(db: Db, from: string, to: string) {
   return x;
 }
 
-export const REPORTS: Record<string, { title: string; ranged: boolean; run: (db: Db, from: string, to: string) => Promise<Omit<Report, "title">> }> = {
+/** perm: a report that lives on another screen (the staff screen) and needs that screen's permission instead of report.view. */
+export const REPORTS: Record<string, { title: string; ranged: boolean; perm?: Action; run: (db: Db, from: string, to: string) => Promise<Omit<Report, "title">> }> = {
   sales: {
     title: "المبيعات والربح", ranged: true,
     async run(db, from, to) {
@@ -148,13 +151,16 @@ export const REPORTS: Record<string, { title: string; ranged: boolean; run: (db:
     async run(db, from, to) {
       const rs = await rows(db, sql`select ec.name as category, count(*)::int as count, sum(e.amount_pt) as amount
         from expenses e join expense_categories ec on ec.id = e.category_id where ${day(sql`e.spent_at`)} between ${from}::date and ${to}::date
-        group by ec.name order by amount desc`);
+        group by ec.name
+        union all select 'مصروفات الموظفين', count(*)::int, sum(se.amount_pt) from staff_entries se
+          where se.kind = 'expense' and ${day(sql`se.at`)} between ${from}::date and ${to}::date having count(*) > 0
+        order by amount desc`);
       return { rows: rs, totals: sum(rs, ["count", "amount"]), columns: [
         { key: "category", label: "البند", type: "text" }, { key: "count", label: "عدد", type: "int" }, { key: "amount", label: "المبلغ", type: "money" }] };
     },
   },
   people: {
-    title: "أداء المهندسين والفنيين", ranged: true,
+    title: "أداء المهندسين والفنيين", ranged: true, perm: "staff.manage",
     /**
      * Per person, for the cars they were on (engineer = reception engineer; technician = assigned on the work order):
      * cars received in the period, comebacks, cars delivered (final statement in the period), labor and parts of those
@@ -213,12 +219,12 @@ export const REPORTS: Record<string, { title: string; ranged: boolean; run: (db:
 };
 
 export function reportRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHandler) {
-  const admin = [auth, requirePerm("report.view")];
-  app.get("/reports", { preHandler: admin }, async () => Object.entries(REPORTS).map(([id, r]) => ({ id, title: r.title, ranged: r.ranged })));
-  app.get("/reports/:id", { preHandler: admin }, async (req) => {
+  app.get("/reports", { preHandler: [auth, requirePerm("report.view")] }, async () => Object.entries(REPORTS).filter(([, r]) => !r.perm).map(([id, r]) => ({ id, title: r.title, ranged: r.ranged })));
+  app.get("/reports/:id", { preHandler: auth }, async (req) => {
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const r = REPORTS[id];
     if (!r) throw new AppError(404, "not_found", "هذا التقرير غير موجود.");
+    await requirePerm(r.perm ?? "report.view")(req);
     const { from, to } = Q.parse(req.query);
     if (from > to) throw new AppError(422, "bad_range", "تاريخ البداية بعد تاريخ النهاية.");
     const rep = await r.run(db, from, to);

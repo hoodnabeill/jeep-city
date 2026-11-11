@@ -227,8 +227,7 @@ async function resetKarim() {
     await a.page.waitForTimeout(800);
     check((await mainText(a.page)).includes("إضافة عميل"), "activity log: the customer added from another PC is listed");
     await a.page.screenshot({ path: path.join(SHOTS, "activity.png"), fullPage: true });
-    await open(a.page, "/reports");
-    await a.page.getByRole("combobox", { name: "التقرير" }).selectOption({ label: "أداء المهندسين والفنيين" });
+    await open(a.page, "/staff/performance");
     await a.page.getByRole("radio", { name: "12 شهر" }).click();
     await a.page.getByRole("columnheader", { name: "عربيات استلمها" }).first().waitFor({ timeout: 10000 });
     check((await a.page.locator("main tbody tr").count()) > 0, "staff performance report lists people for 12 months");

@@ -78,10 +78,11 @@ function downloadCsv(r: ReportData, from: string, to: string) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-export function Reports() {
+/** fixed: one report shown on its own screen (the staff performance page), with no report picker. */
+export function Reports({ fixed }: { fixed?: string } = {}) {
   const f = useFmt();
-  const list = useApi<{ id: string; title: string; ranged: boolean }[]>("/reports");
-  const [id, setId] = useState(queryParam("r") ?? "sales");
+  const list = useApi<{ id: string; title: string; ranged: boolean }[]>(fixed ? null : "/reports");
+  const [id, setId] = useState(fixed ?? queryParam("r") ?? "sales");
   const [preset, setPreset] = useState("month");
   const [[from, to], setRange] = useState(presetRange("month"));
   const [view, setView] = useState<"chart" | "table">("chart");
@@ -92,15 +93,15 @@ export function Reports() {
   const pick = (p: string) => { setPreset(p); if (p !== "custom") setRange(presetRange(p)); };
   return (
     <div className="stack">
-      <PageHead title={`التقرير العام · ${r?.title ?? meta?.title ?? ""}`} sub={meta?.ranged === false ? "الوضع الحالي" : <>من <span className="num">{f.date(from)}</span> إلى <span className="num">{f.date(to)}</span></>}
+      <PageHead title={fixed ? (r?.title ?? "") : `التقرير العام · ${r?.title ?? meta?.title ?? ""}`} sub={meta?.ranged === false ? "الوضع الحالي" : <>من <span className="num">{f.date(from)}</span> إلى <span className="num">{f.date(to)}</span></>}
         actions={<>
           <Button icon={<FileSpreadsheet />} disabled={!r} onClick={() => r && downloadCsv(r, from, to)}>Excel</Button>
           <Button variant="primary" icon={<Printer />} disabled={!r} onClick={() => go(`/print/report/${id}?from=${from}&to=${to}`)}>طباعة / PDF</Button>
         </>} />
       <div className="toolbar" style={{ marginBottom: 0 }}>
-        <Select aria-label="التقرير" style={{ width: 260 }} value={id} onChange={(e) => setId(e.target.value)}>
+        {!fixed && <Select aria-label="التقرير" style={{ width: 260 }} value={id} onChange={(e) => setId(e.target.value)}>
           {(list.data ?? []).map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
-        </Select>
+        </Select>}
         {meta?.ranged !== false && <>
           <Segmented label="الفترة" value={preset} onChange={pick} options={[{ value: "day", label: "اليوم" }, { value: "week", label: "7 أيام" }, { value: "month", label: "الشهر" }, { value: "3m", label: "3 شهور" }, { value: "6m", label: "6 شهور" }, { value: "12m", label: "12 شهر" }, { value: "year", label: "السنة" }, { value: "custom", label: "فترة مخصصة" }]} />
           {preset === "custom" && <>

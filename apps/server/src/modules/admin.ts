@@ -110,14 +110,15 @@ export function adminRoutes(app: FastifyInstance, db: Db, auth: preHandlerHookHa
 
   const TechIn = z.object({ name: z.string().trim().min(2).max(60), phone: z.string().trim().max(30).optional(), active: z.boolean().optional() });
   app.get("/technicians", { preHandler: auth }, async () => db.select().from(technicians).where(isNull(technicians.archivedAt)).orderBy(technicians.name));
-  app.post("/technicians", { preHandler: admin }, async (req, reply) => {
+  const staff = [auth, requirePerm("staff.manage")];
+  app.post("/technicians", { preHandler: staff }, async (req, reply) => {
     const t = TechIn.parse(req.body);
     const id = uuidv7();
     await db.insert(technicians).values({ id, name: t.name, phone: t.phone ?? null, createdBy: actorOf(req).id });
     reply.status(201);
     return { id };
   });
-  app.patch("/technicians/:id", { preHandler: admin }, async (req) => {
+  app.patch("/technicians/:id", { preHandler: staff }, async (req) => {
     const { id } = Id.parse(req.params);
     const t = TechIn.partial().parse(req.body);
     await db.update(technicians).set({ ...t, updatedAt: new Date() }).where(eq(technicians.id, id));

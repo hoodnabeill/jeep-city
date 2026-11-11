@@ -35,6 +35,7 @@ export const PERMISSIONS = {
   "bonus.manage": ADMIN,
   "report.view": ADMIN,
   "partners.manage": ADMIN,            // partner shares, profit split, withdrawals
+  "staff.manage": ADMIN,               // staff list, performance, advances, staff expenses and debts
   "label.print": BOTH,
   "settings.manage": ADMIN,            // settings, users, technicians, devices, import, backups
   "audit.view": ADMIN,
@@ -55,8 +56,8 @@ export function can(who: PermissionHolder | undefined | null, action: Action): b
 }
 
 /** The switches on the user screen: section (home tile) and Arabic label. session.use is implied by an active account. */
-export type Section = "reception" | "inventory" | "accounts" | "users";
-export const SECTION_LABEL: Record<Section, string> = { reception: "الاستقبال", inventory: "المخزن", accounts: "الحسابات والتقارير", users: "المستخدمين والإعدادات" };
+export type Section = "reception" | "inventory" | "accounts" | "staff" | "users";
+export const SECTION_LABEL: Record<Section, string> = { reception: "الاستقبال", inventory: "المخزن", accounts: "الحسابات والتقارير", staff: "الموظفين", users: "المستخدمين والإعدادات" };
 export const PERMISSION_INFO: Record<Exclude<Action, "session.use">, { section: Section; label: string }> = {
   "workOrder.create": { section: "reception", label: "استقبال سيارة وفتح أمر شغل" },
   "workOrder.edit": { section: "reception", label: "تعديل أوامر الشغل المفتوحة" },
@@ -81,7 +82,8 @@ export const PERMISSION_INFO: Record<Exclude<Action, "session.use">, { section: 
   "statement.cancel": { section: "accounts", label: "إلغاء بيان" },
   "salesReturn.manage": { section: "accounts", label: "مرتجع المبيعات" },
   "cash.manage": { section: "accounts", label: "صندوق الكاش والمصروفات" },
-  "bonus.manage": { section: "accounts", label: "حوافز الفنيين" },
+  "bonus.manage": { section: "staff", label: "حوافز المهندسين والفنيين" },
+  "staff.manage": { section: "staff", label: "الموظفين: الأداء والسلف والمصروفات والمديونيات" },
   "report.view": { section: "accounts", label: "التقارير ومبيعات اليوم" },
   "partners.manage": { section: "accounts", label: "الشركاء: النسب والأرباح والمسحوبات" },
   "settings.manage": { section: "users", label: "الإعدادات والمستخدمين والأجهزة" },

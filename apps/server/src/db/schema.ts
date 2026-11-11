@@ -487,6 +487,21 @@ export const bonuses = pgTable("bonuses", {
   statementId: uuid("statement_id").references(() => statements.id),
 });
 
+/**
+ * Money between the shop and one engineer (userId) or technician: advance (سلفة/مسحوبات) and debt (مديونية) add to what
+ * the person owes, repayment (سداد) takes from it, expense (مصروف) is spent on them and counts against profit. Append-only.
+ */
+export const staffEntries = pgTable("staff_entries", {
+  ...base(),
+  userId: uuid("user_id").references(() => users.id),
+  technicianId: uuid("technician_id").references(() => technicians.id),
+  kind: text("kind").notNull(), // advance | debt | repayment | expense
+  amountPt: money("amount_pt").notNull(),
+  at: ts("at").notNull(),
+  fromCash: boolean("from_cash").notNull().default(false),
+  note: text("note"),
+}, (t) => [index("staff_entries_at_ix").on(t.at)]);
+
 export const reminders = pgTable("reminders", {
   ...base(), ...archived(),
   vehicleId: uuid("vehicle_id").references(() => vehicles.id),

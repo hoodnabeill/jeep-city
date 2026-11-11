@@ -7,7 +7,7 @@ import { PERMISSION_INFO, roleDefaults, SECTION_LABEL, type Action, type Categor
 import { PageHead, PageState } from "../shell/Shell";
 import { api } from "../data/api";
 import { useAction, useApi } from "../data/hooks";
-import type { PaymentMethod, PlateType, Technician, User } from "../data/types";
+import type { PaymentMethod, PlateType, User } from "../data/types";
 import { loadPlateTypes } from "../data/plates";
 import { CarPlate } from "./common";
 
@@ -286,10 +286,8 @@ export function UsersScreen() {
 function UsersSec() {
   const run = useAction();
   const users = useApi<User[]>("/users");
-  const techs = useApi<Technician[]>("/technicians");
   const [nu, setNu] = useState<UserDraft | null>(null);
   const [pw, setPw] = useState<{ id: string; name: string; password: string } | null>(null);
-  const [tech, setTech] = useState("");
   return (
     <>
       <Panel title="المستخدمون" flush actions={<Button size="sm" onClick={() => setNu({ username: "", displayName: "", role: "engineer", password: "", perms: roleDefaults("engineer") })}>مستخدم جديد</Button>}>
@@ -306,12 +304,6 @@ function UsersSec() {
             ))}
           </tbody>
         </table>
-      </Panel>
-      <Panel title="الفنيين" sub="قائمة منفصلة عن المستخدمين. يظهر كل فني على بنود الشغل وفي التقارير." flush
-        footer={<div className="row"><Input size="sm" value={tech} onChange={(e) => setTech(e.target.value)} placeholder="اسم الفني" style={{ width: 220 }} /><Button size="sm" disabled={tech.trim().length < 2} onClick={async () => { const r = await run(() => api("/technicians", { method: "POST", body: { name: tech } }), "تمت إضافة الفني."); if (r) setTech(""); }}>إضافة فني</Button></div>}>
-        <table className="table table--compact"><tbody>{(techs.data ?? []).map((t) => (
-          <tr key={t.id}><td className="cell-main">{t.name}</td><td><Switch checked={t.active} onChange={(v) => run(() => api(`/technicians/${t.id}`, { method: "PATCH", body: { active: v } }))}>{t.active ? "نشط" : "موقوف"}</Switch></td></tr>
-        ))}</tbody></table>
       </Panel>
       <Dialog open={!!nu} onClose={() => setNu(null)} title={nu?.id ? `صلاحيات · ${nu.displayName}` : "مستخدم جديد"} wide
         footer={<><Button onClick={() => setNu(null)}>رجوع</Button><Button variant="primary" disabled={!nu || nu.displayName.length < 2 || (!nu.id && ((nu.username ?? "").length < 3 || (nu.password ?? "").length < 8))} onClick={async () => {
