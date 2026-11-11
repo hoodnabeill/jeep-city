@@ -10,5 +10,13 @@
   },
   "ios": {
     "contentInset": "always"
+  },
+  "plugins": {
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "statsUrl": "",
+      "updateUrl": "",
+      "channelUrl": ""
+    }
   }
 }

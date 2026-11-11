@@ -149,3 +149,10 @@ export function uuidv7(now = Date.now()): string {
   const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
+
+/** True when version a (e.g. "0.2.10") is after b ("0.2.9"). Used by the phone app's over-the-air updates. */
+export const isNewerVersion = (a: string, b: string) => {
+  const x = a.split(".").map(Number), y = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0);
+  return false;
+};

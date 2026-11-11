@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   amountInWords, can, lookupRank, roleDefaults, spokenToSearch, computeTotals, divRound, egp, egyptMobile, lineValuePt, numberToArabicWords,
-  fillTemplate, firstName, toMilli, toPt, normalizePlate, parsePlate, PERMISSIONS, plateKey, plateMatches, unusualPlateLetters, qty, searchKey, uuidv7, whatsappLink, type TotalsLine,
+  fillTemplate, firstName, isNewerVersion, toMilli, toPt, normalizePlate, parsePlate, PERMISSIONS, plateKey, plateMatches, unusualPlateLetters, qty, searchKey, uuidv7, whatsappLink, type TotalsLine,
 } from "./index";
 
 describe("money", () => {
@@ -217,5 +217,14 @@ describe("voice search", () => {
     expect(spokenToSearch("محمد عاطف اسماعيل")).toBe("محمد عاطف اسماعيل");
     expect(spokenToSearch("01001234567")).toBe("01001234567");
     expect(spokenToSearch("يا محمد")).toBe("يا محمد");
+  });
+});
+
+describe("app version compare", () => {
+  it("compares each part as a number", () => {
+    expect(isNewerVersion("0.2.10", "0.2.9")).toBe(true);
+    expect(isNewerVersion("0.3.0", "0.2.9")).toBe(true);
+    expect(isNewerVersion("0.2.2", "0.2.2")).toBe(false);
+    expect(isNewerVersion("0.2.1", "0.2.2")).toBe(false);
   });
 });

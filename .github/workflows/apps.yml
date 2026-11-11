@@ -1,6 +1,7 @@
 # Builds the three apps from the same React client:
 #   Windows  → Jeep City installer (.exe, Tauri NSIS)        artifact "windows-installer"
 #   Android  → debug APK (installable on any phone)           artifact "android-apk"
+#   Phones   → web.zip + web.json: the screens alone, picked up by installed phone apps without reinstalling
 #   iOS      → unsigned .ipa                                   artifact "ios-ipa"; installed with SideStore/AltStore,
 #              which signs it with the phone owner's free Apple ID (no paid developer account)
 # Runs on pushes to main, on version tags (v*) and by hand. A tag also attaches the files to a GitHub Release.
@@ -56,6 +57,16 @@ jobs:
           name: android-apk
           path: apps/mobile/android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+      # Over-the-air update for the installed phone apps (see apps/client/src/native.ts): the built screens and their checksum.
+      - name: Pack the screens for phone updates
+        run: |
+          (cd apps/client/dist && zip -qr "$GITHUB_WORKSPACE/web.zip" .)
+          node -e "const f=require(\"fs\"),c=require(\"crypto\");f.writeFileSync(\"web.json\",JSON.stringify({version:require(\"./apps/client/package.json\").version,sha256:c.createHash(\"sha256\").update(f.readFileSync(\"web.zip\")).digest(\"hex\")}))"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-bundle
+          path: web.*
+          if-no-files-found: error
 
   ios:
     runs-on: macos-latest
@@ -94,3 +105,5 @@ jobs:
             out/windows-installer/*.exe
             out/android-apk/*.apk
             out/ios-ipa/*.ipa
+            out/web-bundle/web.zip
+            out/web-bundle/web.json
