@@ -23,7 +23,7 @@ const ACTION: Record<string, string> = {
   "stock_count.open": "بدء جرد", "stock_count.approve": "اعتماد جرد", "stock_count.cancel": "إلغاء جرد",
   "purchase.create": "فاتورة مشتريات", "purchaseReturn.create": "مرتجع مشتريات", "supplier.payment": "دفعة لمورد",
   "cash.open": "فتح يومية الصندوق", "cash.close": "إقفال يومية الصندوق", "cash.deposit": "إيداع في الصندوق", "cash.withdrawal": "سحب من الصندوق",
-  "expense.create": "تسجيل مصروف", "bonus.create": "مكافأة", "partners.update": "تعديل الشركاء والنسب", "partner.withdrawal": "مسحوبات شريك",
+  "expense.create": "تسجيل مصروف", "bonus.create": "مكافأة", "partners.update": "تعديل الشركاء والنسب", "partner.withdrawal": "مسحوبات شريك", "workOrder.delete": "مسح أمر شغل",
   "staff.advance": "سلفة موظف", "staff.debt": "مديونية على موظف", "staff.repayment": "سداد من موظف", "staff.expense": "مصروف على موظف",
   "user.create": "إضافة مستخدم", "user.update": "تعديل مستخدم أو صلاحياته", "settings.update": "تعديل الإعدادات", "settings.numbering": "تعديل الترقيم",
   "settings.payment_methods": "تعديل طرق الدفع", "settings.plate_types": "تعديل أنواع اللوحات",

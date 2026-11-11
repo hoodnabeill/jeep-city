@@ -180,7 +180,7 @@ export function localGet(path: string): unknown {
   if (p === "/lookup") return lookup(q.get("q") ?? "");
   if (p === "/work-orders") {
     const s = q.get("status");
-    return T("workOrders").filter((w) => !s || (s === "in_shop" ? ["open", "ready"].includes(w.status) : w.status === s))
+    return T("workOrders").filter((w) => !w.archivedAt).filter((w) => !s || (s === "in_shop" ? ["open", "ready"].includes(w.status) : w.status === s))
       .sort((a, b) => String(b.enteredAt).localeCompare(String(a.enteredAt))).slice(0, Number(q.get("limit") ?? 200)).map(woRow);
   }
   if ((m = p.match(/^\/work-orders\/([0-9a-f-]{36})$/))) return buildWorkOrder(m[1]) ?? undefined;
@@ -190,7 +190,7 @@ export function localGet(path: string): unknown {
     const h: History = {
       vehicle: v as History["vehicle"],
       odometer: T("odometerReadings").filter((o) => o.vehicleId === v.id).sort((a, b) => String(b.readAt).localeCompare(String(a.readAt))).map((o) => ({ km: o.km, at: o.readAt, workOrderId: o.workOrderId, overrideReason: o.overrideReason })),
-      visits: T("workOrders").filter((w) => w.vehicleId === v.id).sort((a, b) => String(b.enteredAt).localeCompare(String(a.enteredAt))).map((w) => {
+      visits: T("workOrders").filter((w) => w.vehicleId === v.id && !w.archivedAt).sort((a, b) => String(b.enteredAt).localeCompare(String(a.enteredAt))).map((w) => {
         const st = T("statements").find((s) => s.workOrderId === w.id && s.status === "final");
         return {
           workOrder: { id: w.id, number: w.number, type: w.type, status: w.status, enteredAt: w.enteredAt, odometerIn: w.odometerIn, complaint: w.complaint, engineer: userName(w.receptionUserId) },

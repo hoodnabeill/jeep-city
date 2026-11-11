@@ -12,6 +12,7 @@ export const PERMISSIONS = {
   "session.use": BOTH,                 // log in, switch user, global search
   "workOrder.create": BOTH,            // receive car, Job Card, intake, photos, signature
   "workOrder.edit": BOTH,              // open work orders only; status, lines, notes
+  "workOrder.delete": ADMIN,           // open work orders only; issued parts go back to stock
   "conditionReport.manage": BOTH,
   "estimate.approve": BOTH,
   "stock.issue": BOTH,                 // issue parts to a work order, return unused
@@ -61,6 +62,7 @@ export const SECTION_LABEL: Record<Section, string> = { reception: "الاستق
 export const PERMISSION_INFO: Record<Exclude<Action, "session.use">, { section: Section; label: string }> = {
   "workOrder.create": { section: "reception", label: "استقبال سيارة وفتح أمر شغل" },
   "workOrder.edit": { section: "reception", label: "تعديل أوامر الشغل المفتوحة" },
+  "workOrder.delete": { section: "reception", label: "مسح أمر شغل مفتوح (القطع بترجع المخزن)" },
   "conditionReport.manage": { section: "reception", label: "تقارير الحالة" },
   "estimate.approve": { section: "reception", label: "تسجيل موافقة العميل على التقدير" },
   "odometer.lowerThanPrevious": { section: "reception", label: "قبول قراءة عداد أقل من السابقة" },

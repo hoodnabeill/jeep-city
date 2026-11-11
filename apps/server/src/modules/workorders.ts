@@ -125,6 +125,7 @@ export function workOrderRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
     const rows = await db.select({ wo: workOrders, v: vehicles, c: { id: customers.id, name: customers.name }, engineer: users.displayName })
       .from(workOrders).leftJoin(vehicles, eq(vehicles.id, workOrders.vehicleId)).innerJoin(customers, eq(customers.id, workOrders.customerId)).leftJoin(users, eq(users.id, workOrders.receptionUserId))
       .where(and(
+        isNull(workOrders.archivedAt),
         q.status === "in_shop" ? inArray(workOrders.status, ["open", "ready"]) : q.status ? eq(workOrders.status, q.status) : undefined,
         q.engineerId ? eq(workOrders.receptionUserId, q.engineerId) : undefined,
         q.from ? gte(workOrders.enteredAt, new Date(q.from)) : undefined, q.to ? lte(workOrders.enteredAt, new Date(`${q.to}T23:59:59Z`)) : undefined,
@@ -160,6 +161,29 @@ export function workOrderRoutes(app: FastifyInstance, db: Db, auth: preHandlerHo
       if (p.status && p.status !== wo.status) await audit(tx, actor, "workOrder.status", "work_order", id, { status: wo.status }, { status: p.status });
     });
     return loadWorkOrder(db, actor, id);
+  });
+
+  /**
+   * Delete an open work order (Admin): every issued part goes back to stock, the order is cancelled and hidden from
+   * every list. The row stays (archived) so the audit log and the numbering keep it. Delivered orders have a statement:
+   * cancel that instead.
+   */
+  app.delete("/work-orders/:id", { preHandler: [auth, requirePerm("workOrder.delete")] }, async (req) => {
+    const { id } = Id.parse(req.params);
+    const { reason } = z.object({ reason: z.string().trim().min(3, "اكتب سبب المسح.").max(300) }).parse(req.body ?? {});
+    const actor = actorOf(req);
+    await db.transaction(async (tx) => {
+      const wo = await lockOpen(tx, id);
+      if (wo.archivedAt) throw notFound("أمر الشغل");
+      const lines = await tx.select().from(docLines).where(and(eq(docLines.workOrderId, id), isNull(docLines.archivedAt)));
+      for (const line of lines) {
+        if (line.stockQtyMilli && line.variantId) await move(tx, actor, { variantId: line.variantId, warehouseId: wo.warehouseId ?? undefined, qtyMilli: line.stockQtyMilli, kind: "issue_return", refType: "doc_line", refId: line.id });
+        await tx.update(docLines).set({ archivedAt: new Date(), stockQtyMilli: 0, updatedAt: new Date() }).where(eq(docLines.id, line.id));
+      }
+      await tx.update(workOrders).set({ status: "cancelled", archivedAt: new Date(), updatedAt: new Date() }).where(eq(workOrders.id, id));
+      await audit(tx, actor, "workOrder.delete", "work_order", id, { number: wo.number, status: wo.status, lines: lines.length }, { reason });
+    });
+    return { id };
   });
 
   const LineIn = z.object({

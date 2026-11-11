@@ -170,7 +170,7 @@ export function customerRoutes(app: FastifyInstance, db: Db, auth: preHandlerHoo
     const [v] = await db.select().from(vehicles).where(eq(vehicles.id, id));
     if (!v) throw notFound("السيارة");
     const wos = await db.select({ wo: workOrders, engineer: users.displayName }).from(workOrders).leftJoin(users, eq(users.id, workOrders.receptionUserId))
-      .where(eq(workOrders.vehicleId, id)).orderBy(desc(workOrders.enteredAt));
+      .where(and(eq(workOrders.vehicleId, id), isNull(workOrders.archivedAt))).orderBy(desc(workOrders.enteredAt));
     const woIds = wos.map((w) => w.wo.id);
     const lines = woIds.length ? await db.select({ workOrderId: docLines.workOrderId, name: docLines.name, category: docLines.category }).from(docLines).where(and(inArray(docLines.workOrderId, woIds), isNull(docLines.archivedAt))) : [];
     const sts = woIds.length ? await db.select({ id: statements.id, number: statements.number, workOrderId: statements.workOrderId, amountDuePt: statements.amountDuePt, status: statements.status, exitAt: statements.exitAt }).from(statements).where(inArray(statements.workOrderId, woIds)) : [];

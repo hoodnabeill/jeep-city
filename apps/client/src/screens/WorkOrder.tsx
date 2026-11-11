@@ -1,10 +1,10 @@
 import { useState } from "react";
 import {
-  BellRing, CircleCheck, ClipboardCheck, FileSignature, Fuel, Hammer, MessageCircle, PackageOpen, Printer, ReceiptText, Wrench, PackagePlus,
+  BellRing, CircleCheck, ClipboardCheck, FileSignature, Fuel, Hammer, MessageCircle, PackageOpen, Printer, ReceiptText, Trash2, Wrench, PackagePlus,
 } from "lucide-react";
 import { Badge, Button, Chip, DL, Dialog, Field, Input, Money, Panel, Select, Tabs, Textarea, useFmt, When } from "@jc/ui";
 import { PageHead, PageState } from "../shell/Shell";
-import { go, Link, useHotkey } from "../lib";
+import { go, Link, useCan, useHotkey } from "../lib";
 import { api } from "../data/api";
 import { useAction, useApi } from "../data/hooks";
 import type { CatalogHit, Line, Package, Technician, User, WorkOrder, WOStatus } from "../data/types";
@@ -32,6 +32,8 @@ export function WorkOrderScreen({ id }: { id: string }) {
   const [staff, setStaff] = useState<{ engineer: string; techs: string[] } | null>(null);
   const users = useApi<User[]>(staff ? "/users" : null);
   const [sig, setSig] = useState<string | null>(null);
+  const canDelete = useCan("workOrder.delete");
+  const [del, setDel] = useState<string | null>(null);
   const [rem, setRem] = useState({ dueDate: "", dueKm: "", note: "" });
   const [approval, setApproval] = useState({ newPt: "", by: "", method: "phone" as "phone" | "whatsapp" | "in_person" });
   const wo = q.data;
@@ -64,6 +66,7 @@ export function WorkOrderScreen({ id }: { id: string }) {
           <Button icon={<MessageCircle />} onClick={() => setWaOpen(true)}>رسالة واتساب</Button>
           {wo.vehicle && <Button icon={<BellRing />} onClick={() => setRemOpen(true)}>تذكير صيانة</Button>}
           <Button icon={<FileSignature />} onClick={() => { setSig(null); setSigOpen(true); }}>توقيع العميل</Button>
+          {canDelete && editable && !wo.statement && <Button variant="ghost" icon={<Trash2 />} onClick={() => setDel("")}>مسح أمر الشغل</Button>}
           <Button icon={<Printer />} kbd="Ctrl P" onClick={() => go(`/print/job-card/${wo.id}`)}>كارت الإصلاح</Button>
           {wo.statement
             ? <Button variant="primary" icon={<ReceiptText />} onClick={() => go(`/statements/${wo.statement!.id}`)}>فتح البيان {f.s(wo.statement.number)}</Button>
@@ -198,6 +201,16 @@ export function WorkOrderScreen({ id }: { id: string }) {
         </aside>
       </div>
 
+      <Dialog open={del !== null} onClose={() => setDel(null)} title={`مسح أمر الشغل ${f.s(wo.number)}`}
+        footer={<><Button onClick={() => setDel(null)}>رجوع</Button><Button variant="danger" icon={<Trash2 />} disabled={(del ?? "").trim().length < 3} onClick={async () => {
+          const r = await run(() => api(`/work-orders/${id}`, { method: "DELETE", body: { reason: del!.trim() } }), "اتمسح أمر الشغل ورجعت القطع للمخزن.");
+          if (r) { setDel(null); go("/reception"); }
+        }}>مسح نهائي</Button></>}>
+        <div className="stack" style={{ gap: 12 }}>
+          <p>أمر الشغل هيختفي من كل القوايم، و<b>كل القطع اللي اتصرفت عليه هترجع المخزن</b>. المسح بيتسجل في سجل العمليات باسمك والسبب.</p>
+          <Field label="سبب المسح"><Input value={del ?? ""} onChange={(e) => setDel(e.target.value)} placeholder="مثال: اتفتح بالغلط" autoFocus /></Field>
+        </div>
+      </Dialog>
       <Dialog open={approveOpen} onClose={() => setApproveOpen(false)} title="تسجيل موافقة على تكلفة جديدة"
         footer={<><Button onClick={() => setApproveOpen(false)}>رجوع</Button><Button variant="primary" disabled={!approval.newPt || !approval.by.trim()} onClick={async () => {
           const r = await run(() => api(`/work-orders/${id}/approvals`, { method: "POST", body: { newPt: toPt(approval.newPt), approvedByName: approval.by, method: approval.method } }), "سُجلت الموافقة.");
